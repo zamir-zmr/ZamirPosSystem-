@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ASH BAKES POS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root { --primary: #00C7C7; --secondary: #3b82f6; --a: #10b981; --d: #ef4444; --s: #f8fafc; --w: #f59e0b; --slate: #64748b; }
+        * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        input, textarea { -webkit-user-select: text; user-select: text; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--s); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        .logo-circle { width: 60px; height: 60px; margin: 0; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 3px solid rgba(255, 255, 255, 0.2); box-shadow: 0 10px 30px rgba(0, 210, 255, 0.3); transition: 0.3s; flex-shrink: 0; overflow: hidden; }
+        .logo-circle img { width: 100%; height: 100%; object-fit: cover; }
+        .logo-circle b { font-size: 16px; font-weight: 900; color: #FFFF00; line-height: 1; }
+        .logo-circle span { font-size: 6px; font-weight: 700; color: #FFFF00; letter-spacing: 1px; text-transform: uppercase; }
+        .h { background: #fff; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+        .logo-box { display: flex; align-items: center; gap: 15px; }
+        #s { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #cbd5e1; margin-top: 10px; outline: none; box-sizing: border-box; }
+        .mw { flex: 1; overflow-y: auto; padding: 12px; margin-bottom: 70px; }
+        .pg { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+        .pc { background: #fff; padding: 15px 8px; text-align: center; border-radius: 18px; border: 1px solid #e2e8f0; font-weight: 600; cursor: pointer; transition: 0.2s; position: relative; }
+        .pc.sel { border: 2.5px solid var(--secondary); background: #eff6ff; }
+        .cat-badge { font-size: 8px; color: var(--w); text-transform: uppercase; display: block; }
+        .cart-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--primary); color: #fff; padding: 18px 25px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-radius: 20px 20px 0 0; z-index: 1100; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); box-sizing: border-box; }
+        #cart-panel { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; z-index: 1200; height: 90%; transform: translateY(100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 30px 30px 0 0; display: flex; flex-direction: column; }
+        #cart-panel.open { transform: translateY(0); }
+        .cart-items { flex: 1; overflow-y: auto; padding: 10px 20px; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f8fafc; }
+        .qty-box { display: flex; align-items: center; gap: 8px; }
+        .q-btn { width: 30px; height: 30px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; }
+        .q-minus { background: var(--d); }
+        .q-plus { background: var(--a); }
+        .cart-summary { padding: 15px 25px; border-top: 2px dashed #e2e8f0; background: #fff; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 14px; }
+        .summary-input { width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 8px; text-align: center; font-weight: bold; }
+        .btn { padding: 14px; border: none; border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer; flex: 1; }
+        .flex-btn { display: flex; gap: 10px; margin-top: 15px; }
+        .ov { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1150; backdrop-filter: blur(4px); }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 25px; border-radius: 28px; z-index: 1300; width: 85%; max-width: 340px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        #logo-preview-box { width: 100px; height: 100px; border: 2px solid #ddd; display: flex; align-items: center; justify-content: center; background-color: #f9f9f9; overflow: hidden; border-radius: 15px; flex-shrink: 0; }
+        #logo-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+        #preview-content { font-size: 13px; line-height: 1.5; max-height: 250px; overflow-y: auto; }
+        .icon-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 10px 0; max-height: 150px; overflow-y: auto; padding: 5px; }
+        .icon-opt { font-size: 24px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; text-align: center; transition: 0.2s; }
+        .icon-opt.selected { background: var(--primary); border-color: var(--primary); color: white; }
+        
+        /* Dashboard Styling */
+        .full-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8fafc; z-index: 2000; display: none; flex-direction: column; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .dash-container { display: flex; gap: 15px; padding: 20px; justify-content: center; flex-wrap: wrap; }
+        .dash-tile { width: 95px; height: 100px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; cursor: pointer; box-shadow: 0 8px 15px rgba(0,0,0,0.1); transition: 0.2s; }
+        .dash-tile:active { transform: scale(0.95); }
+        .dash-tile span { font-size: 28px; margin-bottom: 5px; }
+        .bg-reports { background: #334155; }
+        .bg-pos { background: #3b82f6; }
+        .bg-logout { background: #ef4444; }
+        .dash-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #e2e8f0; background: #fff; }
+
+        .report-list { background: #fff; border-radius: 15px; margin-top: 20px; padding: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .report-item { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #f0f0f0; align-items: center; }
+        .report-item:last-child { border-bottom: none; }
+        .report-item b { font-size: 16px; color: #333; }
+        .report-item span { font-weight: 800; color: #000; }
+        
+        /* Fixed Layout Styling */
+/* Fixed Layout Styling */
+/* Professional Square Grid System */
+/* Responsive Professional Square Grid */
+/* Premium Square Box Design */
+/* Compact Group Styling */
+/* POS Dashboard Layout with Scroll */
+/* POS Dashboard Layout - Scroll Fixed */
+.report-content {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* Laptop: Left 1 part, Right 2 parts */
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    
+    /* Scroll fix for both Laptop & Mobile */
+    height: calc(100vh - 80px); 
+    overflow-y: auto !important; 
+    -webkit-overflow-scrolling: touch; /* Mobile smooth scroll */
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .report-content { 
+        grid-template-columns: 1fr; 
+        height: calc(100dvh - 70px); /* Mobile dynamic height */
+        padding: 15px;
+    }
+}
+
+.control-panel { display: flex; flex-direction: column; gap: 15px; }
+.stats-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+
+.pos-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.pos-btn {
+    width: 100%;
+    padding: 15px;
+    border-radius: 12px;
+    border: none;
+    color: white;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.pos-btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+.bg-blue { background: #3b82f6; }
+.bg-green { background: #10b981; }
+.bg-slate { background: #475569; }
+.bg-purple { background: #8b5cf6; }
+
+
+
+
+
+
+
+        
+        
+        
+        
+        /* Reports Specific Styling */
+.report-card { padding: 20px; border-radius: 20px; margin-bottom: 15px; color: white; text-align: center; cursor: pointer; }
+.bg-day { background: #10b981; }
+.bg-month { background: #3b82f6; }
+.bg-year { background: #f59e0b; }
+.report-card h4 { margin: 0; font-size: 14px; opacity: 0.9; }
+.report-card h2 { margin: 5px 0 0; font-size: 24px; }
+
+.date-list-item { 
+    display: flex; justify-content: space-between; padding: 15px; 
+    background: white; border-radius: 12px; margin-bottom: 8px;
+    border: 1px solid #eee; font-weight: 600;
+}
+.active-date { border-left: 5px solid #10b981; background: #f0fdf4; }
+
+        
+        .bill-row:active { background-color: #f1f5f9; }
+.bill-row { cursor: pointer; transition: background 0.2s; }
+
+        
+    </style>
+</head>
+<body onload="initApp()">
+    <div class="h">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="logo-box">
+                <button id="hb" onclick="history.back()" style="background:#f1f5f9; border:none; padding:8px; border-radius:10px; display:none">🏠</button>
+                <div class="logo-circle" id="main-logo-container"><b>ASH</b><span>BAKES</span></div>
+                <b style="font-size:20px; color:var(--primary)">ASH BAKES</b>
+            </div>
+            <div style="display:flex;gap:8px">
+                <button onclick="showDashboard()" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px">📊</button>
+                <button onclick="show('settingsM')" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px">⚙️</button>
+                <button onclick="showAdd()" style="background:var(--primary);color:#fff;border:none;padding:10px 15px;border-radius:10px;font-weight:bold">+ ITEM</button>
+            </div>
+        </div>
+        <input type="text" id="s" placeholder="Search product..." onkeyup="render()">
+    </div>
+
+    <div id="eb" style="display:none; background:#fff; padding:12px 16px; border-bottom:1px solid #ddd; justify-content:space-between; align-items:center; position: sticky; top: 0; z-index: 100;">
+        <b id="sc">0 Selected</b>
+        <div style="display:flex; gap:8px">
+            <button id="edBtn" onclick="handleEdit()" style="background:var(--w); color:white; border:none; padding:8px 15px; border-radius:8px; display:none">Edit</button>
+            <button id="delBtn" onclick="handleDeleteAsk()" style="background:var(--d); color:white; border:none; padding:8px 15px; border-radius:8px; opacity:0.5" disabled>Delete</button>
+            <button onclick="exitMulti()" style="background:var(--slate); color:white; border:none; padding:8px 15px; border-radius:8px">Exit</button>
+        </div>
+    </div>
+
+    <div class="mw"><div id="m" class="pg"></div></div>
+
+    <div class="cart-bar" id="bottom-cart-bar" onclick="location.hash='cart'">
+        <span id="cart-count">0 ITEMS</span>
+        <span id="cart-total">OMR 0.000</span>
+    </div>
+
+    <div id="cart-panel">
+        <div style="padding:20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center">
+            <b style="font-size:22px">ORDER BILL</b>
+            <button onclick="history.back()" style="border:none; background:#f1f5f9; width:40px; height:40px; border-radius:50%; font-size:20px">×</button>
+        </div>
+        <div class="cart-items" id="cart-list"></div>
+        <div class="cart-summary">
+            <div class="summary-row"><span>Subtotal</span><span id="sub-total-disp">0</span></div>
+            <div class="summary-row"><span>Discount (%)</span><input type="number" id="disc-val" class="summary-input" placeholder="0" oninput="updateCartUI()"></div>
+            <div class="summary-row"><span>Delivery (OMR)</span><input type="number" id="deliv-val" class="summary-input" placeholder="0" step="0.1" oninput="updateCartUI()"></div>
+            <div class="summary-row" style="font-weight:600"><span>VAT (5%)</span><span id="vat-total">0.000</span></div>
+        </div>
+        <div style="padding:20px 25px; background:#f8fafc">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px"><span style="font-weight:700">GRAND TOTAL</span><span id="grand-total" style="font-size:22px; font-weight:900; color:var(--primary)">0.000</span></div>
+            <div class="flex-btn">
+                <button class="btn" style="background:var(--primary)" onclick="showPreview()">PRINT RECEIPT</button>
+                <button class="btn" style="background:var(--slate)" onclick="clearCart()">RESET</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="ov" id="ov" onclick="closeM()"></div>
+    <div class="modal" id="logoM">
+        <h3>Update Logo</h3>
+        <div id="logo-preview-box">Box</div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="previewFile()">
+        <button class="btn" style="background:var(--secondary); width:100%; margin:10px 0" onclick="document.getElementById('fileInput').click()">📁 CHOOSE FROM GALLERY</button>
+        <div class="flex-btn"><button class="btn" style="background:var(--a)" onclick="saveLogo()">SAVE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div>
+    </div>
+    <div class="modal" id="catM"><h3 id="catTitle">Category</h3><input type="text" id="cn" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box"><div class="icon-grid" id="icon-selector">
+            <div class="icon-opt" onclick="selIcon(this)">🎂</div><div class="icon-opt" onclick="selIcon(this)">🥐</div><div class="icon-opt" onclick="selIcon(this)">🍞</div><div class="icon-opt" onclick="selIcon(this)">🥨</div><div class="icon-opt" onclick="selIcon(this)">🍪</div><div class="icon-opt" onclick="selIcon(this)">🧁</div><div class="icon-opt" onclick="selIcon(this)">🍩</div><div class="icon-opt" onclick="selIcon(this)">🥤</div><div class="icon-opt" onclick="selIcon(this)">☕</div><div class="icon-opt" onclick="selIcon(this)">🍔</div><div class="icon-opt" onclick="selIcon(this)">🍕</div><div class="icon-opt" onclick="selIcon(this)">🥪</div><div class="icon-opt" onclick="selIcon(this)">🍟</div><div class="icon-opt" onclick="selIcon(this)">🍕</div><div class="icon-opt" onclick="selIcon(this)">🍨</div><div class="icon-opt" onclick="selIcon(this)">🥕</div><div class="icon-opt" onclick="selIcon(this)">🥧</div><div class="icon-opt" onclick="selIcon(this)">🧁</div><div class="icon-opt" onclick="selIcon(this)">🍰</div><div class="icon-opt" onclick="selIcon(this)">🍫</div><div class="icon-opt" onclick="selIcon(this)">🧀</div><div class="icon-opt" onclick="selIcon(this)">🥭</div><div class="icon-opt" onclick="selIcon(this)">🥥</div><div class="icon-opt" onclick="selIcon(this)">🍎</div><div class="icon-opt" onclick="selIcon(this)">🍓</div>
+            
+    </div><div class="flex-btn"><button class="btn" style="background:var(--a)" onclick="saveCat()">SAVE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
+    <div class="modal" id="am"><h3 id="modalTitle">Product</h3><input type="text" id="nn" placeholder="Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd;"><input type="number" id="np" placeholder="Price" step="0.001" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd;"><select id="nc" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd"></select><div class="flex-btn"><button class="btn" style="background:var(--a)" onclick="saveItem()">SAVE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
+    <div class="modal" id="settingsM"><h3>Settings</h3>
+        <button class="btn" style="background:var(--primary); width:100%; margin-bottom:10px" onclick="closeM(); show('logoM')">🖼️ UPDATE LOGO</button>
+        <button class="btn" style="background:var(--a); width:100%; margin-bottom:10px" onclick="closeM(); showCatM()">➕ ADD CATEGORY</button>
+        <button class="btn" style="background:var(--w); width:100%; margin-bottom:10px" onclick="enableCatMulti()">🗑️ DELETE CATEGORIES</button>
+        <button class="btn" style="background:var(--secondary); width:100%; margin-bottom:10px" onclick="toggleMulti()">🛠️ MULTI-SELECT ITEMS</button>
+        <button class="btn" style="width:100%; background:var(--slate)" onclick="closeM()">CLOSE</button>
+    </div>
+    <div class="modal" id="previewM"><h3>Receipt</h3><div id="preview-content"></div><div class="flex-btn"><button class="btn" style="background:var(--primary)" onclick="executePrint()">PRINT</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
+    <div class="modal" id="delConfirmM"><h3>Delete?</h3><div class="flex-btn"><button class="btn" style="background:var(--d)" onclick="confirmDelete()">DELETE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
+    <div class="modal" id="dupM"><div style="text-align:center"><h3>⚠️ Duplicated</h3><p id="dupMsg"></p><button class="btn" style="background:var(--secondary); width:100%" onclick="closeDup()">OK</button></div></div>
+
+   
+   
+   
+    <div id="dashPage" class="full-page">
+    <div class="dash-header"><b style="font-size: 22px;">DASHBOARD</b><button onclick="closeDash()" style="border:none; background:#f1f5f9; width:40px; height:40px; border-radius:50%; font-size:24px">×</button></div>
+    <div class="dash-container">
+        <div class="dash-tile bg-reports" onclick="showReports()"><span>📊</span>Reports</div>
+        <div class="dash-tile bg-pos" onclick="closeDash()"><span>🖥️</span>POS</div>
+        <div class="dash-tile bg-logout" onclick="location.reload()"><span>⬅️</span>Logout</div>
+        
+        
+        <div style="background: #fff; padding: 15px; border-radius: 15px; margin: 10px 20px 80px 20px; border: 1px solid #fecaca; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);">
+    <b style="display:block; margin-bottom:10px; color: #dc2626">⚠️ DANGER ZONE (RESET):</b>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <span style="font-size:14px; font-weight:bold;">Safety Lock:</span>
+        <button id="lockBtn" onclick="toggleResetLock()" style="background:#64748b; color:white; border:none; padding:10px 18px; border-radius:20px; font-size:12px; font-weight:bold;">LOCKED (OFF)</button>
+    </div>
+
+    <button id="realResetBtn" onclick="confirmFullReset()" disabled style="width:100%; background:#ef4444; color:white; border:none; padding:15px; border-radius:12px; font-weight:bold; opacity: 0.3; cursor: not-allowed; font-size: 14px;">
+        🗑️ RESET ALL SALES DATA
+    </button>
+</div>
+        
+        
+        
+        
+    </div>
+</div>
+<div id="reportsPage" class="full-page" style="background: #f8fafc; overflow: hidden; display: none; flex-direction: column;">
+    <div class="dash-header" style="background: white; padding: 8px 15px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0;">
+        <b style="font-size: 16px; color: #1e293b;">📊 SALES ANALYTICS</b>
+        <button onclick="document.getElementById('reportsPage').style.display='none'" style="border:none; background:#eff6ff; color:#3b82f6; padding:6px 15px; border-radius:8px; font-weight:bold; font-size:12px">Back</button>
+    </div>
+
+    <div style="flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; align-content: start;">
+        
+        <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+            <b style="color: #64748b; font-size:10px; display:block; margin-bottom:8px">📅 DATE RANGE</b>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                <input type="date" id="exportStart" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
+                <input type="date" id="exportEnd" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
+                <button class="pos-btn" style="background:#3b82f6; height: 32px; font-size:11px; border-radius:6px;" onclick="setTodayDate()">TODAY</button>
+                <button class="pos-btn" style="background:#10b981; height: 32px; font-size:11px; border-radius:6px;" onclick="exportToExcel()">EXCEL</button>
+            </div>
+        </div>
+
+        <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <b style="display:block; margin-bottom:8px; color: #64748b; font-size:10px;">📦 BACKUP</b>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button class="pos-btn" style="background:#8b5cf6; height:50px; border-radius: 8px; font-size:11px; flex-direction:column;" onclick="exportFullBackup()">📤 EXPORT</button>
+                <button class="pos-btn" style="background:#475569; height:50px; border-radius: 8px; font-size:11px; flex-direction:column;" onclick="document.getElementById('importFile').click()">📥 IMPORT</button>
+            </div>
+        </div>
+                <div onclick="showDetails('day')" style="background: white; padding: 12px; border-radius: 12px;
+                cursor: pointer;">
+        </div>
+
+        
+        <div onclick="showDetails('day')" style="background: white; padding: 12px; border-radius: 12px; border-left: 5px solid #10b981; border: 1px solid #e2e8f0; border-left: 5px solid #10b981; cursor: pointer;">
+            <small style="color:#64748b; font-weight:bold; font-size: 10px;">TODAY</small>
+            <h2 id="daySale" style="font-size:20px; margin:5px 0; color:#1e293b">0.000</h2>
+            <span style="color:#10b981; font-size:9px;">● Live</span>
+        </div>
+
+
+        <div onclick="showDetails('month')" style="background: white; padding: 12px; border-radius: 12px; border-left: 5px solid #3b82f6; border: 1px solid #e2e8f0; border-left: 5px solid #3b82f6; cursor: pointer;">
+            <small style="color:#64748b; font-weight:bold; font-size: 10px;">MONTH</small>
+            <h2 id="monthSale" style="font-size:20px; margin:5px 0; color:#1e293b">0.000</h2>
+            <span style="color:#3b82f6; font-size:9px;">● Progress</span>
+        </div>
+
+        <div onclick="showDetails('year')" style="background: white; padding: 12px; border-radius: 12px; border-left: 5px solid #f59e0b; border: 1px solid #e2e8f0; border-left: 5px solid #f59e0b; cursor: pointer;">
+            <small style="color:#64748b; font-weight:bold; font-size: 10px;">YEAR</small>
+            <h2 id="yearSale" style="font-size:20px; margin:5px 0; color:#1e293b">0.000</h2>
+            <span style="color:#f59e0b; font-size:9px;">● Summary</span>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<script>
+    let menu = JSON.parse(localStorage.getItem('asb_m')) || [], 
+        cats = JSON.parse(localStorage.getItem('asb_c')) || [{n:'Cakes', i:'🎂'}, {n:'Snacks', i:'🥐'}], 
+        cart = [];
+    let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '📂';
+    
+    function initApp() { loadSavedLogo(); 
+    location.hash = 'home'; render(); }
+    function showDashboard() { document.getElementById('dashPage').style.display = 'flex'; }
+    function closeDash() { document.getElementById('dashPage').style.display = 'none'; }
+
+    window.onhashchange = () => { 
+        const h = location.hash; 
+        if(!h || h==='#home') { curCat = null; toggleCart(false); render(); } 
+        else if(h.startsWith('#cat-')) { curCat = decodeURIComponent(h.replace('#cat-','')); toggleCart(false); render(); } 
+        else if(h==='#cart') toggleCart(true); 
+    };
+
+    function getShift(hours) {
+        if (hours >= 5 && hours < 12) return "Morning";
+        if (hours >= 12 && hours < 17) return "Afternoon";
+        if (hours >= 17 && hours < 21) return "Evening";
+        return "Night";
+    }
+
+    function selIcon(el) { document.querySelectorAll('.icon-opt').forEach(opt => opt.classList.remove('selected')); el.classList.add('selected'); selectedIcon = el.innerText; }
+    function previewFile() {
+        const file = document.getElementById
+        ('fileInput').files[0];
+        const reader = new FileReader();
+        reader.onloadend = function () { displayLogo(reader.result); }
+        if (file) reader.readAsDataURL(file);
+    }
+    function saveLogo() {
+        const previewImg = document.querySelector('#logo-preview-box img');
+        if (previewImg && previewImg.src) {
+            localStorage.setItem('savedPhotoUrl', previewImg.src);
+            displayLogo(previewImg.src);
+            closeM();
+        } else alert("Choose photo!");
+    }
+    function displayLogo(src) {
+        let content = `<img src="${src}" style="width:100%;height:100%;object-fit:cover" onerror="this.src='';this.parentElement.innerText='Box'">`;
+        document.getElementById('logo-preview-box').innerHTML = content;
+        document.getElementById('main-logo-container').innerHTML = content;
+    }
+    function loadSavedLogo() { let savedPhoto = localStorage.getItem('savedPhotoUrl'); if (savedPhoto) displayLogo(savedPhoto); }
+
+    async function executePrint() {
+    const { jsPDF } = window.jspdf;
+    const itemRowH = 6; 
+    const headH = 95; 
+    const footH = 65;
+    const dynH = headH + (cart.length * itemRowH) + footH + 20; 
+    const doc = new jsPDF({ unit: 'mm', format: [80, dynH] });
+    const LEFT = 5, CENTER = 40, RIGHT = 75; let y = 10;
+    
+    const now = new Date(); 
+    const dateStr = now.toLocaleDateString('en-GB'); 
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); 
+    const shift = getShift(now.getHours());
+    
+    let billCount = parseInt(localStorage.getItem('asb_bill_count')) || 0;
+    billCount++;
+    localStorage.setItem('asb_last_date', dateStr); 
+    localStorage.setItem('asb_bill_count', billCount);
+
+    // Logo
+    let savedPhoto = localStorage.getItem('savedPhotoUrl');
+    if (savedPhoto) { try { doc.addImage(savedPhoto, 'PNG', 20, y, 40, 40); y += 45; } catch (e) { y += 5; } }
+
+    // Header Info
+    doc.setFontSize(10); doc.text("AL SEEB", CENTER, y, {align:'center'}); y += 4;
+    doc.setFontSize(8); doc.text("Sultanate of oman", CENTER, y, {align:'center'}); y += 4;
+    doc.text("97060084", CENTER, y, {align:'center'}); y += 6;
+    doc.setFontSize(12); doc.setFont("helvetica", "bold");
+    doc.text("Take Away Hall", CENTER, y, {align:'center'}); y += 8;
+
+    // Bill Details
+    doc.setFontSize(10); doc.text(billCount + " : Bill no", LEFT, y); y += 5;
+    doc.setFontSize(8); doc.setFont("helvetica", "normal");
+    doc.text("Date : " + dateStr, LEFT, y); doc.text("Time : " + timeStr, RIGHT, y, {align: 'right'}); y += 4;
+    doc.text(shift + ":", LEFT, y); doc.text("Admin:", RIGHT, y, {align: 'right'}); y += 5;
+
+    // --- Professional Table Header ---
+    doc.setLineWidth(0.3);
+    doc.setLineDashPattern([1, 1], 0);
+    doc.line(LEFT, y, RIGHT, y); y += 4;
+    doc.setFont("helvetica", "bold");
+    doc.text("Item", LEFT, y);
+    doc.text("Qty", CENTER + 5, y, {align: 'right'});
+    doc.text("Price", CENTER + 18, y, {align: 'right'});
+    doc.text("Amount", RIGHT, y, {align: 'right'});
+    y += 2; doc.line(LEFT, y, RIGHT, y); y += 6;
+
+    // Items Loop
+    let sub = 0; let totalQty = 0;
+    doc.setFont("helvetica", "normal");
+    cart.forEach(item => { 
+        let it = item.price * item.qty; sub += it; totalQty += item.qty;
+        doc.text(item.name, LEFT, y); 
+        doc.text(item.qty.toString(), CENTER + 5, y, {align: 'right'}); 
+        doc.text(item.price.toFixed(3), CENTER + 18, y, {align: 'right'});
+        doc.text(it.toFixed(3), RIGHT, y, {align: 'right'}); 
+        y += itemRowH; 
+    });
+
+    // Calculations logic
+    let dp = parseFloat(document.getElementById('disc-val').value) || 0, 
+        dlv = parseFloat(document.getElementById('deliv-val').value) || 0; 
+    let discAmt = sub * (dp / 100);
+    let ad = sub - discAmt, vt = ad * 0.05, g = ad + vt + dlv;
+
+    y += 2; doc.line(LEFT, y, RIGHT, y); y += 5;
+    
+    // Summary Rows
+    doc.setFontSize(9);
+    if (discAmt > 0) {
+        doc.text("Discount (" + dp + "%)", LEFT, y);
+        doc.text("-" + discAmt.toFixed(3), RIGHT, y, {align: 'right'});
+        y += 5;
+    }
+    doc.text("VAT Amt (5%)", LEFT, y);
+    doc.text(vt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
+
+    if (dlv > 0) {
+        doc.text("Delivery Charges", LEFT, y);
+        doc.text(dlv.toFixed(3), RIGHT, y, {align: 'right'});
+        y += 5;
+    }
+
+    // Grand Total (Highlighted)
+    doc.setLineDashPattern([], 0); // Solid line for total
+    doc.line(RIGHT - 30, y, RIGHT, y); y += 6;
+    doc.setFontSize(14); doc.setFont("helvetica", "bold");
+    doc.text("GTotal:", CENTER, y); 
+    doc.text(g.toFixed(3), RIGHT, y, {align: 'right'}); y += 8;
+    
+    // Items Count Summary
+    doc.setFontSize(10); doc.setLineDashPattern([1, 1], 0);
+    doc.line(LEFT, y, RIGHT, y); y += 5;
+    doc.text("Items / Qty :    " + cart.length + " / " + totalQty, LEFT, y);
+    y += 5; doc.line(LEFT, y, RIGHT, y); y += 7;
+
+    doc.setFontSize(7); doc.setFont("helvetica", "normal");
+    doc.text("Generated by ASH BAKES POS System", CENTER, y, {align: 'center'});
+
+    logSale(g.toFixed(3), billCount); 
+    window.open(doc.output('bloburl'), '_blank');
+    clearCart(); closeM();
+}
+
+
+    function showPreview() { if(!cart.length) return; let sub = 0, itemsHtml = ''; cart.forEach(i => { sub += i.price * i.qty; itemsHtml += `<div style="display:flex; justify-content:space-between; border-bottom: 1px dotted #eee; padding: 4px 0;"><span>${i.name} x${i.qty}</span><span>${(i.price*i.qty).toFixed(3)}</span></div>`; }); let dp = parseFloat(document.getElementById('disc-val').value) || 0, dlv = parseFloat(document.getElementById('deliv-val').value) || 0; let ad = sub - (sub * (dp / 100)), vt = ad * 0.05, g = ad + vt + dlv; document.getElementById('preview-content').innerHTML = `<b>Items:</b>${itemsHtml}<div style="margin-top:10px"><b>Total: OMR ${g.toFixed(3)}</b></div>`; show('previewM'); }
+    function render() { let c = document.getElementById('m'), q = document.getElementById('s').value.toLowerCase(), hb = document.getElementById('hb'); c.innerHTML = ''; if (!curCat && !q) { hb.style.display = "none"; cats.forEach(cat => { let d = document.createElement('div'); d.className = 'pc' + (selSet.has(cat.n) ? ' sel' : ''); d.innerHTML = `<span style="font-size:32px">${cat.i || '📂'}</span><br>${cat.n}`; d.onclick = () => { if(isCatMulti){ selSet.has(cat.n) ? selSet.delete(cat.n) : selSet.add(cat.n); updateBar(); render(); } else location.hash = 'cat-' + cat.n; }; c.appendChild(d); }); } else { hb.style.display = "block"; let list = q ? menu.filter(i => i.name.toLowerCase().includes(q)) : menu.filter(i => i.cat === curCat); list.forEach(i => { let d = document.createElement('div'); d.className = 'pc' + (selSet.has(i.id) ? ' sel' : ''); d.innerHTML = `<span class="cat-badge">${i.cat}</span><b>${i.name}</b><br><b style="color:var(--a)">${i.price.toFixed(3)}</b>`; d.onclick = () => { if(isMulti){ selSet.has(i.id) ? selSet.delete(i.id) : selSet.add(i.id); updateBar(); render(); } else addToCart(i); }; c.appendChild(d); }); } }
+    
+
+function saveCat() {
+    let v = document.getElementById('cn').value.trim();
+    if (!v) return;
+
+    // --- CATEGORY DUPLICATE CHECK ---
+    // Agar hum nayi category add kar rahe hain (editCatName nahi hai)
+    if (!editCatName) {
+        let catExists = cats.find(c => c.n.toLowerCase() === v.toLowerCase());
+        if (catExists) {
+            showError(`"${v}" Category Already exists!`); // Wahi professional popup use hoga
+            return; // Code yahin ruk jayega
+        }
+    }
+    // --------------------------------
+
+    if (editCatName) {
+        cats = cats.map(c => c.n === editCatName ? { n: v, i: selectedIcon } : c);
+        menu.forEach(i => { if (i.cat === editCatName) i.cat = v; });
+    } else {
+        cats.push({ n: v, i: selectedIcon });
+    }
+    
+    saveAll();
+    closeM();
+}
+
+    
+    function saveItem() {
+    let n = document.getElementById('nn').value.trim();
+    let p = parseFloat(document.getElementById('np').value);
+    let c = document.getElementById('nc').value;
+
+    if (!n || isNaN(p)) return;
+
+    // --- DUPLICATE CHECK START ---
+    // Agar hum naya item add kar rahe hain (editId nahi hai)
+    if (!editId) {
+        let exists = menu.find(x => x.name.toLowerCase() === n.toLowerCase());
+        if (exists) {
+            showError(`item Already in "${exists.cat}" category.`);
+            return; // Yahin se wapas mud jao, save mat karo
+        }
+    }
+    // --- DUPLICATE CHECK END ---
+
+    if (editId) {
+        Object.assign(menu.find(x => x.id === editId), { name: n, price: p, cat: c });
+    } else {
+        menu.push({ id: Date.now(), name: n, price: p, cat: c });
+    }
+
+    saveAll();
+    closeM();
+}
+
+// Popup dikhane aur band karne ke functions
+function showError(msg) {
+    document.getElementById('errorText').innerText = msg;
+    document.getElementById('errorOverlay').style.display = 'block';
+    document.getElementById('errorModal').style.display = 'block';
+}
+
+function closeError() {
+    document.getElementById('errorOverlay').style.display = 'none';
+    document.getElementById('errorModal').style.display = 'none';
+}
+
+
+    
+    function addToCart(item) { let ex = cart.find(x => x.id === item.id); if(ex) ex.qty++; else cart.push({...item, qty: 1}); updateCartUI(); }
+    function updateCartUI() { let list = document.getElementById('cart-list'), sub = 0; list.innerHTML = ''; cart.forEach((item, idx) => { sub += item.price * item.qty; list.innerHTML += `<div class="cart-item"><div><b>${item.name}</b><br><small>${item.price.toFixed(3)}</small></div><div class="qty-box"><button class="q-btn q-minus" onclick="changeQty(${idx}, -1)">-</button><b>${item.qty}</b><button class="q-btn q-plus" onclick="changeQty(${idx}, 1)">+</button><b style="min-width:60px; text-align:right">${(item.price * item.qty).toFixed(3)}</b></div></div>`; }); let dp = parseFloat(document.getElementById('disc-val').value) || 0, dlv = parseFloat(document.getElementById('deliv-val').value) || 0; let ad = sub - (sub * (dp / 100)), vt = ad * 0.05, g = ad + vt + dlv; document.getElementById('sub-total-disp').innerText = sub.toFixed(3); document.getElementById('cart-total').innerText = `OMR ${g.toFixed(3)}`; document.getElementById('grand-total').innerText = g.toFixed(3); document.getElementById('vat-total').innerText = vt.toFixed(3); document.getElementById('cart-count').innerText = `${cart.reduce((a,b)=>a+b.qty,0)} ITEMS`; }
+    function changeQty(i, d) { cart[i].qty += d; if (cart[i].qty < 1) cart.splice(i, 1); updateCartUI(); }
+    function toggleCart(open) { const cp = document.getElementById('cart-panel'); if(open) cp.classList.add('open'); else cp.classList.remove('open'); }
+    function closeDup() { document.getElementById('dupM').style.display = 'none'; }
+    function closeM() { document.querySelectorAll('.modal, .ov').forEach(el => el.style.display = 'none'); }
+    function show(id) { document.getElementById('ov').style.display = 'block'; document.getElementById(id).style.display = 'block'; }
+    function updateBar() { document.getElementById('sc').innerText = `${selSet.size} Selected`; document.getElementById('edBtn').style.display = selSet.size === 1 ? "block" : "none"; let d = document.getElementById('delBtn'); d.disabled = !selSet.size; d.style.opacity = selSet.size ? "1" : "0.5"; }
+    function handleDeleteAsk() { show('delConfirmM'); }
+    function confirmDelete() { if(isCatMulti) { cats = cats.filter(c => !selSet.has(c.n)); menu = menu.filter(i => !selSet.has(i.cat)); } else { menu = menu.filter(i => !selSet.has(i.id)); } saveAll(); exitMulti(); closeM(); }
+    function handleEdit() { let val = Array.from(selSet)[0]; if(isCatMulti) { editCatName = val; let c = cats.find(x => x.n === val); document.getElementById('cn').value = val; show('catM'); } else { editId = val; let i = menu.find(x => x.id === editId); document.getElementById('nn').value = i.name; document.getElementById('np').value = i.price; show('am'); } }
+    function enableCatMulti() { isCatMulti = true; isMulti = false; curCat = null; selSet.clear(); updateBar(); document.getElementById('eb').style.display = 'flex'; closeM(); render(); }
+    function toggleMulti() { isMulti = true; isCatMulti = false; selSet.clear(); updateBar(); document.getElementById('eb').style.display = 'flex'; closeM(); render(); }
+    function exitMulti() { isMulti = false; isCatMulti = false; selSet.clear(); document.getElementById('eb').style.display = 'none'; render(); }
+    
+    
+    function saveAll() { localStorage.setItem('asb_m', JSON.stringify(menu)); localStorage.setItem('asb_c', JSON.stringify(cats)); render(); }
+    function showCatM() { editCatName = null; show('catM'); }
+    function showAdd() { editId = null; let s = document.getElementById('nc'); s.innerHTML = cats.map(c => `<option value="${c.n}">${c.n}</option>`).join(''); show('am'); }
+    function clearCart() { cart = []; updateCartUI(); if(location.hash === '#cart') history.back(); }
+    
+    
+    
+    // 1. Dashboard par Day/Month/Year ki total values dikhane ke liye
+function showReports() {
+    document.getElementById('reportsPage').style.display = 'flex';
+    
+    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const curMonth = now.getMonth();
+    const curYear = now.getFullYear();
+
+    let dayTotal = 0, monthTotal = 0, yearTotal = 0;
+
+    sales.forEach(s => {
+        let sDate = new Date(s.date);
+        if (s.date === todayStr) dayTotal += s.amount;
+        if (sDate.getMonth() === curMonth && sDate.getFullYear() === curYear) monthTotal += s.amount;
+        if (sDate.getFullYear() === curYear) yearTotal += s.amount;
+    });
+
+    document.getElementById('daySale').innerText = "OMR " + dayTotal.toFixed(3);
+    document.getElementById('monthSale').innerText = "OMR " + monthTotal.toFixed(3);
+    document.getElementById('yearSale').innerText = "OMR " + yearTotal.toFixed(3);
+}
+
+// 2. Click karne par Daily/Monthly details dikhane ke liye
+
+function showDetails(type) {
+    document.getElementById('dateDetailsPage').style.display = 'flex';
+    const list = document.getElementById('dateList');
+    const title = document.getElementById('detailTitle');
+    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    const now = new Date();
+    list.innerHTML = '';
+
+    if (type === 'day') {
+        title.innerText = "DAILY REPORTS";
+        let daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        for (let i = 1; i <= daysInMonth; i++) {
+            let dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+            let dayTotal = sales.filter(s => s.date === dateKey).reduce((a, b) => a + b.amount, 0);
+            // Yahan 'dateKey' pass ho raha hai, toh click kaam karega
+            addReportRow(list, `${now.toLocaleString('default',{month:'short'})} ${i}`, dayTotal.toFixed(3), i === now.getDate(), dateKey);
+        }
+    } 
+    else if (type === 'month') {
+        title.innerText = "MONTHLY REPORTS";
+        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        months.forEach((m, i) => {
+            let mTotal = sales.filter(s => {
+                let d = new Date(s.date);
+                return d.getMonth() === i && d.getFullYear() === now.getFullYear();
+            }).reduce((a, b) => a + b.amount, 0);
+            // Monthly mein 'null' bheja hai taaki click na ho
+            addReportRow(list, `${m} ${now.getFullYear()}`, mTotal.toFixed(3), i === now.getMonth(), null);
+        });
+    } 
+    else if (type === 'year') {
+        title.innerText = "YEARLY REPORTS";
+        const currentYear = now.getFullYear();
+        for (let y = 2024; y <= currentYear; y++) {
+            let yTotal = sales.filter(s => new Date(s.date).getFullYear() === y).reduce((a, b) => a + b.amount, 0);
+            // Yearly mein bhi 'null' bheja hai
+            addReportRow(list, `Year ${y}`, yTotal.toFixed(3), y === currentYear, null);
+        }
+    }
+}
+
+function showIndividualBills(dateKey, displayLabel) {
+    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    let filteredBills = sales.filter(s => s.date === dateKey);
+    
+    document.getElementById('billModalTitle').innerText = "BILLS DETAIL";
+    document.getElementById('billModalSubTitle').innerText = displayLabel + " (Click to View PDF)";
+    
+    let container = document.getElementById('billListContent');
+    container.innerHTML = '';
+
+    if (filteredBills.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:100px 20px;">Is din koi records nahi mile.</div>`;
+    } else {
+        filteredBills.forEach((b, index) => {
+            // Humne yahan onclick="reprintBill('${b.billNo}')" add kiya hai
+            container.innerHTML += `
+                <div class="bill-row" onclick="reprintBill('${b.billNo}')" style="display:flex; justify-content:space-between; align-items:center; padding:18px 12px; border-bottom:1px solid #edf2f7; background: white; margin-bottom: 8px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <div style="background:#00D2D3; color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:bold;">
+                            ${index + 1}
+                        </div>
+                        <span>
+                            <b style="color:#2d3748; font-size:15px;">Bill #${b.billNo || '---'}</b><br>
+                            <small style="color:#718096; font-weight:500;">🕒 ${b.time} (Tap to Open)</small>
+                        </span>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-weight:800; color:#1a202c; font-size:18px;">${b.amount.toFixed(3)}</span>
+                        <small style="color:#00D2D3; display:block; font-size:11px; font-weight:bold;">OMR</small>
+                    </div>
+                </div>`;
+        });
+    }
+
+    document.getElementById('ov').style.display = 'block'; 
+    document.getElementById('billDetailsM').style.display = 'flex'; 
+}
+
+function reprintBill(billNo) {
+    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    // Bill number se data dhundhein (String ya Number dono check karega)
+    let b = sales.find(s => s.billNo == billNo);
+
+    if (!b) return alert("Bill Data Not Found!");
+    
+    // Agar items save nahi hain toh reprint nahi ho payega
+    if (!b.items || b.items.length === 0) {
+        return alert("Maaf kijiye! Is purane bill ke items save nahi kiye gaye the.");
+    }
+
+    const { jsPDF } = window.jspdf;
+    // 80mm roll paper size
+    const doc = new jsPDF({ unit: 'mm', format: [80, 160] });
+
+    // Header Design
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16); doc.text("ASH BAKES", 40, 10, {align:'center'});
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8); doc.text("Seeb, Muscat, Oman", 40, 15, {align:'center'});
+    doc.text("--------------------------------------------------", 40, 20, {align:'center'});
+    
+    doc.setFontSize(9);
+    doc.text(`Bill No: ${b.billNo}`, 5, 26);
+    doc.text(`Date: ${b.date} ${b.time}`, 5, 31);
+    doc.text("--------------------------------------------------", 40, 36, {align:'center'});
+
+    // Table Header
+    doc.setFont(undefined, 'bold');
+    doc.text("Item", 5, 42); doc.text("Qty", 45, 42); doc.text("Total", 65, 42);
+    doc.setFont(undefined, 'normal');
+    
+    let y = 48;
+    b.items.forEach(item => {
+        // Lambe naam ko chota karne ke liye substring
+        let itemName = item.name.length > 20 ? item.name.substring(0, 18) + ".." : item.name;
+        doc.text(itemName, 5, y);
+        doc.text(item.qty.toString(), 47, y);
+        doc.text(item.total.toFixed(3), 65, y);
+        y += 5;
+    });
+
+    doc.text("--------------------------------------------------", 40, y + 2, {align:'center'});
+    y += 8;
+    
+    // Grand Total
+    doc.setFontSize(11); doc.setFont(undefined, 'bold');
+    doc.text(`GRAND TOTAL: OMR ${b.amount.toFixed(3)}`, 5, y);
+    
+    y += 10; 
+    doc.setFont(undefined, 'normal'); doc.setFontSize(8);
+    doc.text("Thank You for Your Visit!", 40, y, {align:'center'});
+
+    // PDF ko naye window mein open karein
+    window.open(doc.output('bloburl'), '_blank');
+}
+
+
+
+
+
+// Ye code aapke JavaScript function ke andar jayega
+function renderUltraCompactCard(item) {
+    return `
+    <div style="background: white; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+        <div style="font-size: 13px; font-weight: 600; color: #475569;">
+            ${item.date || item.month || item.year}
+        </div>
+        <div style="font-size: 14px; font-weight: 800; color: #10b981;">
+            ${item.total.toFixed(3)} <span style="font-size: 9px; color: #94a3b8;">OMR</span>
+        </div>
+    </div>`;
+}
+
+
+// Professional Reset System (No Chrome Popups)
+function confirmFullReset() {
+    document.getElementById('resetModalOverlay').style.display = 'block';
+    document.getElementById('resetModal').style.display = 'block';
+}
+
+function closeResetModal() {
+    document.getElementById('resetModalOverlay').style.display = 'none';
+    document.getElementById('resetModal').style.display = 'none';
+}
+
+function executeDataReset() {
+    localStorage.removeItem('asb_sales_logs');
+    localStorage.setItem('asb_bill_count', '0');
+    showReports(); 
+    toggleResetLock();
+    closeResetModal();
+    alert("Database successfully cleared.");
+}
+
+// 3. Row UI helper (Green highlighting ke liye)
+
+function addReportRow(parent, label, amt, active, dateKey) {
+    let div = document.createElement('div');
+    div.className = `date-list-item ${active ? 'active-date' : ''}`;
+    
+    // Agar dateKey hai (Daily report), toh click karne par popup khulega
+    // Agar dateKey nahi hai (Month/Year), toh click kaam nahi karega
+    if (dateKey) {
+        div.style.cursor = "pointer";
+        div.onclick = () => showIndividualBills(dateKey, label);
+    } else {
+        div.style.cursor = "default"; // Arrow normal rahega, hath nahi banega
+    }
+
+    div.innerHTML = `
+        <span>${label}</span>
+        <span style="font-weight:800;">OMR ${amt}</span>
+    `;
+    parent.appendChild(div);
+}
+
+
+function showAlert(msg) {
+    document.getElementById('alertMessage').innerText = msg;
+    document.getElementById('alertOverlay').style.display = 'block';
+    document.getElementById('customAlert').style.display = 'block';
+}
+
+function closeAlert() {
+    document.getElementById('alertOverlay').style.display = 'none';
+    document.getElementById('customAlert').style.display = 'none';
+}
+
+// 1. Today's Date fill karne ka function
+function setTodayDate() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('exportStart').value = today;
+    document.getElementById('exportEnd').value = today;
+}
+
+// 2. Updated Export Function (Professional Layout)
+function exportToExcel() {
+    const start = document.getElementById('exportStart').value;
+    const end = document.getElementById('exportEnd').value;
+
+    if (!start || !end) {
+        alert("Pehle Date Range select karein!");
+        return;
+    }
+
+    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    let filtered = sales.filter(s => s.date >= start && s.date <= end);
+    let totalRev = filtered.reduce((a, b) => a + b.amount, 0).toFixed(3);
+
+    let excelData = "\uFEFF"; 
+    const line = "------------------------------------------------------------------------------------------------------------\n";
+    
+    // Header
+    excelData += line;
+    excelData += "\tASH BAKES - EXECUTIVE FINANCIAL STATEMENT\n";
+    excelData += line + "\n";
+    
+    // --- Store ko ek row upar shift kiya gaya hai ---
+    excelData += `REPORT SUMMARY\t\t\tStore: Ash Bakes Muscat\n`; // Row 1 Right
+    excelData += `Total Revenue: ${totalRev} OMR\t\t\tStatus: Verified\n`; // Row 2 Left & Right
+    excelData += `Date Range: ${start} to ${end}\n`; // Row 3 Left
+    
+    excelData += "\n" + line + "\n";
+    excelData += "TRANSACTION LEDGER DETAILS\n";
+    excelData += line;
+    excelData += "BILL NO\tDATE\tTIME\tTOTAL (OMR)\n";
+    excelData += line;
+
+    filtered.forEach(s => {
+        let bNo = s.billNo || "---";
+        excelData += `${bNo}\t${s.date}\t${s.time}\t${s.amount.toFixed(3)}\n\n`; 
+    });
+
+    excelData += line;
+    excelData += "\tEND OF REPORT\n";
+
+    const blob = new Blob([excelData], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `ASH_BAKES_REPORT_${start}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
+function logSale(total, bNo) {
+    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    const now = new Date();
+    
+    const newSale = {
+        billNo: bNo,
+        date: now.toISOString().split('T')[0],
+        time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }),
+        amount: parseFloat(total),
+        // YE LINE HONA ZAROORI HAI
+        items: JSON.parse(JSON.stringify(cart)) 
+    };
+
+    sales.push(newSale);
+    localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
+}
+
+
+
+
+
+// 1. Poora data (Items + Sales) file mein download karne ke liye
+function exportFullBackup() {
+    const backupData = {
+        menu: JSON.parse(localStorage.getItem('asb_m')) || [],
+        cats: JSON.parse(localStorage.getItem('asb_c')) || [],
+        sales: JSON.parse(localStorage.getItem('asb_sales_logs')) || [],
+        // Yeh line bill number ko save karegi
+        billCount: parseInt(localStorage.getItem('asb_bill_count')) || 0,
+        lastDate: localStorage.getItem('asb_last_date') || "",
+        logo: localStorage.getItem('savedPhotoUrl') || ""
+    };
+
+    const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `ASH_BAKES_BACKUP_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+}
+
+function importFullBackup(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (confirm("Restore backup? Current data will be replaced.")) {
+                localStorage.setItem('asb_m', JSON.stringify(data.menu));
+                localStorage.setItem('asb_c', JSON.stringify(data.cats));
+                localStorage.setItem('asb_sales_logs', JSON.stringify(data.sales));
+                
+                // Bill number ko wapas restore kiya
+                localStorage.setItem('asb_bill_count', data.billCount || 0); 
+                localStorage.setItem('asb_last_date', data.lastDate || "");
+                
+                if(data.logo) localStorage.setItem('savedPhotoUrl', data.logo);
+                
+                alert("Restored! Next bill number: " + ((data.billCount || 0) + 1));
+                location.reload();
+            }
+        } catch (err) {
+            alert("Invalid Backup File!");
+        }
+    };
+    reader.readAsText(file);
+}
+
+
+
+
+    
+
+let isResetLocked = true;
+
+// Reset Lock/Unlock karne ke liye
+function toggleResetLock() {
+    const lockBtn = document.getElementById('lockBtn');
+    const resetBtn = document.getElementById('realResetBtn');
+    isResetLocked = !isResetLocked;
+    
+    if (isResetLocked) {
+        lockBtn.innerText = "LOCKED (OFF)";
+        lockBtn.style.background = "#64748b";
+        resetBtn.disabled = true;
+        resetBtn.style.opacity = "0.3";
+        resetBtn.style.cursor = "not-allowed";
+    } else {
+        lockBtn.innerText = "UNLOCKED (ON)";
+        lockBtn.style.background = "#10b981";
+        resetBtn.disabled = false;
+        resetBtn.style.opacity = "1";
+        resetBtn.style.cursor = "pointer";
+    }
+}
+
+// Data Reset karne ke liye
+function confirmFullReset() {
+    let confirm1 = confirm("Kya aap saara sales data 0 karna chahte hain?");
+    if (confirm1) {
+        let confirm2 = confirm("SURE? Yeh wapas nahi aayega!");
+        if (confirm2) {
+            localStorage.removeItem('asb_sales_logs'); // Sales logs delete
+            localStorage.setItem('asb_bill_count', '0'); // Bill count 0
+            alert("Data Reset Ho Gaya!");
+            showReports(); // Dashboard update
+            toggleResetLock(); // Wapas lock kar do
+        }
+    }
+}
+
+    
+</script>
+
+
+<div id="dateDetailsPage" class="full-page" style="background: #f1f5f9; display: none; flex-direction: column; overflow: hidden;">
+    <div class="dash-header" style="background: white; padding: 12px 20px; border-bottom: 2px solid #e2e8f0; flex-shrink: 0;">
+        <div style="display: flex; flex-direction: column;">
+            <b id="detailTitle" style="font-size: 16px; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;">Sales Report</b>
+            <span style="font-size: 10px; color: #64748b; font-weight: bold;">VIEWING DATA ANALYTICS</span>
+        </div>
+        <button onclick="document.getElementById('dateDetailsPage').style.display='none'" style="border:none; background:#fef2f2; color:#ef4444; width:32px; height:32px; border-radius:8px; font-weight:bold; cursor:pointer;">✕</button>
+    </div>
+<div id="dateList" style="flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; align-content: start;">
+    </div>
+
+</div>
+
+
+
+
+
+<div id="alertOverlay" class="ov" style="z-index: 3000;"></div>
+<div id="customAlert" class="modal" style="z-index: 3100; text-align: center;">
+    <div style="font-size: 50px; margin-bottom: 10px;">⚠️</div>
+    <h3 style="margin: 0 0 10px 0; color: #334155;">Selection Required</h3>
+    <p id="alertMessage" style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Please select both start and end dates to export.</p>
+    <button class="btn" style="background: var(--primary); width: 100%;" onclick="closeAlert()">GOT IT</button>
+</div>
+
+
+
+<div id="alertModalOverlay" class="ov" style="z-index: 6000;"></div>
+<div id="alertModal" class="modal" style="z-index: 6100; text-align: center; border-top: 5px solid #3b82f6;">
+    <div id="alertIcon" style="font-size: 40px; margin-bottom: 10px;">ℹ️</div>
+    <h3 id="alertTitle" style="margin: 0 0 10px 0; color: #1e293b;">Notification</h3>
+    <p id="alertMessage" style="color: #64748b; font-size: 14px; margin-bottom: 25px; line-height: 1.5;"></p>
+    <button class="btn" style="width: 100%; background: #3b82f6;" onclick="closeAlertModal()">UNDERSTOOD</button>
+</div>
+
+<div id="errorOverlay" class="ov" style="z-index: 5000;"></div>
+<div id="errorModal" class="modal" style="z-index: 5100; text-align: center; border-bottom: 5px solid #ef4444;">
+    <div style="font-size: 50px; margin-bottom: 10px;">⚠️</div>
+    <h3 style="margin: 0; color: #1e293b; font-size: 20px;">Already Exists!</h3>
+    <p id="errorText" style="color: #64748b; font-size: 14px; margin: 15px 0 25px 0; line-height: 1.5;"></p>
+    <button class="btn" style="background: #ef4444; width: 100%; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);" onclick="closeError()">OK, I WILL CHECK</button>
+</div>
+<div id="billDetailsM" class="modal" style="width: 100%; height: 100%; max-height: 100vh; top: 0; left: 0; transform: none; margin: 0; padding: 0; overflow: hidden; z-index: 20000; display: none; border-radius: 0; background: #fff; flex-direction: column;">
+    
+    <div style="position: sticky; top: 0; background: #fff; padding: 20px 15px; border-bottom: 2px solid #f1f5f9; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+        <div>
+            <h3 id="billModalTitle" style="margin:0; font-size: 18px; color: #1e293b; font-weight: 800; letter-spacing: 0.5px;">BILLS DETAIL</h3>
+            <small id="billModalSubTitle" style="color: #64748b; font-size: 13px; font-weight: 600;"></small>
+        </div>
+        
+        <button onclick="document.getElementById('billDetailsM').style.display='none'; document.getElementById('ov').style.display='none'" 
+                style="background: #ff4757; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(255,71,87,0.2); font-size: 14px;">
+            CLOSE ✕
+        </button>
+    </div>
+
+    <div id="billListContent" style="flex: 1; overflow-y: auto; padding: 10px 15px 40px 15px; -webkit-overflow-scrolling: touch; background: #fff;">
+        </div>
+</div>
+
+
+
+
+</body>
+</html>
