@@ -1472,6 +1472,24 @@ function confirmFullReset() {
     }
 }
 
+
+function closeDelModal(){
+  document.getElementById('delOv').style.display='none';
+  document.getElementById('delBox').style.display='none';
+}
+function deleteBill(billNo, dateKey, displayLabel){
+  document.getElementById('delTitle').innerText = `Bill ${billNo} Delete?`;
+  document.getElementById('delOv').style.display='block';
+  document.getElementById('delBox').style.display='block';
+  document.getElementById('delOkBtn').onclick = function(){
+    let s = JSON.parse(localStorage.getItem('asb_sales_logs'))||[];
+    s = s.filter(x => String(x.billNo) !== String(billNo));
+    localStorage.setItem('asb_sales_logs', JSON.stringify(s));
+    closeDelModal();
+    showIndividualBills(dateKey, displayLabel);
+    showReports();
+  };
+}
     
 </script>
 
@@ -1627,7 +1645,15 @@ function confirmFullReset() {
         </div>
 </div>
 
-
+<div id="delOv" onclick="closeDelModal()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:99998;backdrop-filter:blur(4px);"></div>
+<div id="delBox" style="display:none;position:fixed;z-index:99999;margin-bottom:50px;left:50%;transform:translateX(-50%);width:88%;max-width:200px;background:#fff;border-radius:24px;padding:24px 20px 20px;box-shadow:0 -4px 30px rgba(0,0,0,0.2);">
+  <div style="width:40px;height:4px;background:#e2e8f0;border-radius:99px;margin:0 auto 24px;"></div>
+  <div style="text-align:center;font-size:40px;margin-bottom:10px;">🗑️</div>
+  <h3 id="delTitle" style="text-align:center;margin:0 0 6px;font-size:20px;color:#1e293b;font-weight:800;">Bill Delete?</h3>
+  <p style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 28px;line-height:1.5;"><br>Bill permanently remove</p>
+  <button id="delOkBtn" style="width:100%;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;padding:17px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;box-shadow:0 8px 24px rgba(29,68,68,0.35);">🗑️ Delete</button>
+  <button onclick="closeDelModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:15px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;">↩️ CANCEL</button>
+</div>
 
 
 </body>
