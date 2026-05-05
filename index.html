@@ -881,26 +881,40 @@ function showIndividualBills(dateKey, displayLabel) {
             }
 
             container.innerHTML += `
-                <div class="bill-row" style="display:flex; justify-content:space-between; align-items:center; padding:12px 10px; border-bottom:1px solid #f1f5f9; background: white; margin-bottom: 8px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    <div onclick="reprintBill('${b.billNo}')" style="display:flex; align-items:center; gap:10px; flex: 1; cursor:pointer;">
-                        <div style="background:${themeColor}; color:white; width:26px; height:26px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;">
-                            ${index + 1}
+                <div class="bill-row" style="display:flex; flex-direction:column; padding:12px 10px; border-bottom:1px solid #f1f5f9; background: white; margin-bottom: 8px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div onclick="reprintBill('${b.billNo}')" style="display:flex; align-items:center; gap:10px; flex: 1; cursor:pointer;">
+                            <div style="background:${themeColor}; color:white; width:26px; height:26px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;">
+                                ${index + 1}
+                            </div>
+                            <span>
+                                <b style="color:#1e293b; font-size:13px;">Bill ${b.billNo}</b><br>
+                                <small style="color:#64748b; font-size:10px;">🕒 ${b.time} | ${methodIcon}</small>
+                            </span>
                         </div>
-                        <span>
-                            <b style="color:#1e293b; font-size:13px;">Bill ${b.billNo}</b><br>
-                            <small style="color:#64748b; font-size:10px;">🕒 ${b.time} | ${methodIcon}</small>
-                        </span>
+                        
+                        <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                            <span style="font-weight:bold; color:#0f172a; font-size:14px;">${parseFloat(b.amount).toFixed(3)}</span>
+                            
+                            <select onchange="updateMethodDropdown('${b.billNo}', this.value, '${dateKey}', '${displayLabel}')" 
+                                    style="border:1px solid #e2e8f0; background:#f8fafc; color:#475569; font-size:10px; padding:1px 4px; border-radius:6px; font-weight:bold; outline:none;">
+                                <option value="Transfer" ${lowerMethod === 'transfer' ? 'selected' : ''}>🏦 Transfer</option>
+                                <option value="ATM" ${lowerMethod === 'atm' ? 'selected' : ''}>💳 ATM Card</option>
+                                <option value="Cash" ${lowerMethod === 'cash' ? 'selected' : ''}>💵 Cash</option>
+                            </select>
+                        </div>
                     </div>
                     
-                    <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-                        <span style="font-weight:bold; color:#0f172a; font-size:14px;">${parseFloat(b.amount).toFixed(3)}</span>
-                        
-                        <select onchange="updateMethodDropdown('${b.billNo}', this.value, '${dateKey}', '${displayLabel}')" 
-                                style="border:1px solid #e2e8f0; background:#f8fafc; color:#475569; font-size:10px; padding:1px 4px; border-radius:6px; font-weight:bold; outline:none;">
-                            <option value="Transfer" ${lowerMethod === 'transfer' ? 'selected' : ''}>🏦 Transfer</option>
-                            <option value="ATM" ${lowerMethod === 'atm' ? 'selected' : ''}>💳 ATM Card</option>
-                            <option value="Cash" ${lowerMethod === 'cash' ? 'selected' : ''}>💵 Cash</option>
-                        </select>
+                    <!-- EDIT & DELETE BUTTONS -->
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button onclick="openEditBillModal('${b.billNo}', '${dateKey}', '${displayLabel}')" 
+                                style="flex:1; background:#f59e0b; color:white; border:none; padding:7px 0; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">
+                            ✏️ EDIT
+                        </button>
+                        <button onclick="deleteBill('${b.billNo}', '${dateKey}', '${displayLabel}')" 
+                                style="flex:1; background:#ef4444; color:white; border:none; padding:7px 0; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">
+                            🗑️ DELETE
+                        </button>
                     </div>
                 </div>`;
         });
@@ -908,17 +922,6 @@ function showIndividualBills(dateKey, displayLabel) {
     document.getElementById('ov').style.display = 'block'; 
     document.getElementById('billDetailsM').style.display = 'flex'; 
 }
-
-function updateMethodDropdown(billNo, newMethod, dateKey, label) {
-    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
-    let idx = sales.findIndex(s => String(s.billNo) === String(billNo));
-    if (idx !== -1) {
-        sales[idx].method = newMethod;
-        localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
-        showIndividualBills(dateKey, label);
-    }
-}
-
 
 // Function to handle Dropdown Change
 function updateMethodDropdown(billNo, newMethod, dateKey, label) {
@@ -933,6 +936,178 @@ function updateMethodDropdown(billNo, newMethod, dateKey, label) {
     }
 }
 
+// ===== BILL DELETE FUNCTION =====
+function deleteBill(billNo, dateKey, displayLabel) {
+    if (!confirm(`Bill ${billNo} delete karna chahte hain? Yeh wapas nahi aayega!`)) return;
+    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    sales = sales.filter(s => String(s.billNo) !== String(billNo));
+    localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
+    showIndividualBills(dateKey, displayLabel);
+    showReports();
+}
+
+// ===== EDIT PANEL - OPEN =====
+let editCartItems = []; // items jo edit ho rahe hain
+
+function openEditBillModal(billNo, dateKey, displayLabel) {
+    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    let bill = sales.find(s => String(s.billNo) === String(billNo));
+    if (!bill) return alert('Bill not found!');
+
+    // Hidden fields set karein
+    document.getElementById('editBillNo').value = billNo;
+    document.getElementById('editDateKey').value = dateKey;
+    document.getElementById('editDisplayLabel').value = displayLabel;
+    document.getElementById('editPanelBillLabel').innerText = `Bill ${billNo} — ${displayLabel}`;
+
+    // Items copy karein (edit ke liye)
+    editCartItems = JSON.parse(JSON.stringify(bill.items || []));
+
+    // Discount & Delivery
+    document.getElementById('editDiscount').value = parseFloat(bill.discountPerc) || 0;
+    document.getElementById('editDelivery').value = parseFloat(bill.deliveryCharges) || 0;
+
+    // Payment method
+    setEditMethod(bill.method || 'Transfer');
+
+    // Items render karein
+    renderEditItems();
+    recalcEditTotals();
+
+    // Panel dikhao
+    document.getElementById('editBillPanel').style.display = 'flex';
+}
+
+// ===== EDIT ITEMS RENDER =====
+function renderEditItems() {
+    let list = document.getElementById('editItemsList');
+    list.innerHTML = '';
+
+    if (!editCartItems || editCartItems.length === 0) {
+        list.innerHTML = `<div style="text-align:center; color:#94a3b8; padding:30px;">No items found in this bill.</div>`;
+        return;
+    }
+
+    editCartItems.forEach((item, idx) => {
+        let itemTotal = (parseFloat(item.price) * parseFloat(item.qty)).toFixed(3);
+        list.innerHTML += `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f1f5f9;">
+                <div style="flex:1;">
+                    <b style="font-size:14px; color:#1e293b;">${item.name}</b><br>
+                    <small style="color:#64748b;">${parseFloat(item.price).toFixed(3)} OMR each</small>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <button onclick="editQtyChange(${idx}, -1)"
+                            style="background:#ef4444; color:white; border:none; border-radius:6px; width:28px; height:28px; font-size:16px; font-weight:bold; cursor:pointer;">−</button>
+                    <input type="number" id="editQty-${idx}" value="${parseFloat(item.qty)}" step="0.001" min="0"
+                           oninput="editQtyManual(${idx}, this.value)"
+                           style="width:54px; text-align:center; border:1px solid #e2e8f0; border-radius:6px; font-weight:bold; padding:4px; font-size:13px;">
+                    <button onclick="editQtyChange(${idx}, 1)"
+                            style="background:#10b981; color:white; border:none; border-radius:6px; width:28px; height:28px; font-size:16px; font-weight:bold; cursor:pointer;">+</button>
+                    <b style="min-width:58px; text-align:right; color:#1e293b; font-size:13px;" id="editRowTotal-${idx}">${itemTotal}</b>
+                </div>
+            </div>`;
+    });
+}
+
+// ===== QTY CHANGE BUTTONS =====
+function editQtyChange(idx, delta) {
+    let newQty = parseFloat(editCartItems[idx].qty) + delta;
+    if (newQty <= 0) {
+        if (!confirm(`"${editCartItems[idx].name}" remove karna chahte hain?`)) return;
+        editCartItems.splice(idx, 1);
+        renderEditItems();
+    } else {
+        editCartItems[idx].qty = newQty;
+        document.getElementById(`editQty-${idx}`).value = newQty;
+        document.getElementById(`editRowTotal-${idx}`).innerText = (newQty * parseFloat(editCartItems[idx].price)).toFixed(3);
+    }
+    recalcEditTotals();
+}
+
+// ===== MANUAL QTY INPUT =====
+function editQtyManual(idx, val) {
+    let newQty = parseFloat(val);
+    if (!isNaN(newQty) && newQty >= 0) {
+        editCartItems[idx].qty = newQty;
+        document.getElementById(`editRowTotal-${idx}`).innerText = (newQty * parseFloat(editCartItems[idx].price)).toFixed(3);
+        recalcEditTotals();
+    }
+}
+
+// ===== RECALCULATE TOTALS =====
+function recalcEditTotals() {
+    let sub = editCartItems.reduce((a, b) => a + parseFloat(b.price) * parseFloat(b.qty), 0);
+    let dp = parseFloat(document.getElementById('editDiscount').value) || 0;
+    let dlv = parseFloat(document.getElementById('editDelivery').value) || 0;
+    let afterDisc = sub - (sub * dp / 100);
+    let vat = afterDisc * 0.05;
+    let grand = afterDisc + vat + dlv;
+
+    document.getElementById('editSubTotal').innerText = sub.toFixed(3);
+    document.getElementById('editVat').innerText = vat.toFixed(3);
+    document.getElementById('editGrandTotal').innerHTML = `${grand.toFixed(3)} <small style="font-size:12px;">OMR</small>`;
+}
+
+// ===== PAYMENT METHOD SELECT =====
+function setEditMethod(method) {
+    document.getElementById('editSelectedMethod').value = method;
+    const labels = {
+        'Transfer': document.getElementById('editLbl-t'),
+        'ATM': document.getElementById('editLbl-a'),
+        'Cash': document.getElementById('editLbl-c')
+    };
+    for (let key in labels) {
+        labels[key].style.border = '1.5px solid #f1f5f9';
+        labels[key].style.background = '#fff';
+        labels[key].querySelector('span:last-child').style.color = '#64748b';
+    }
+    let active = labels[method];
+    if (active) {
+        active.style.border = '1.5px solid #00C7C7';
+        active.style.background = '#f0fdfa';
+        active.querySelector('span:last-child').style.color = '#1e293b';
+    }
+}
+
+// ===== SAVE EDITED BILL =====
+function saveEditedBill() {
+    let billNo = document.getElementById('editBillNo').value;
+    let dateKey = document.getElementById('editDateKey').value;
+    let displayLabel = document.getElementById('editDisplayLabel').value;
+    let discount = parseFloat(document.getElementById('editDiscount').value) || 0;
+    let delivery = parseFloat(document.getElementById('editDelivery').value) || 0;
+    let method = document.getElementById('editSelectedMethod').value;
+
+    // Grand total recalculate
+    let sub = editCartItems.reduce((a, b) => a + parseFloat(b.price) * parseFloat(b.qty), 0);
+    let afterDisc = sub - (sub * discount / 100);
+    let vat = afterDisc * 0.05;
+    let grand = afterDisc + vat + delivery;
+
+    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    let idx = sales.findIndex(s => String(s.billNo) === String(billNo));
+    if (idx !== -1) {
+        sales[idx].items = JSON.parse(JSON.stringify(editCartItems));
+        sales[idx].amount = parseFloat(grand.toFixed(3));
+        sales[idx].discountPerc = discount;
+        sales[idx].deliveryCharges = delivery;
+        sales[idx].method = method;
+        localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
+    }
+
+    closeEditBillPanel();
+    showIndividualBills(dateKey, displayLabel);
+    showReports();
+}
+
+// ===== CLOSE EDIT PANEL =====
+function closeEditBillPanel() {
+    document.getElementById('editBillPanel').style.display = 'none';
+}
+
+// Keep old names for compatibility
+function closeEditBillModal() { closeEditBillPanel(); }
 
 function reprintBill(billNo) {
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
@@ -1343,6 +1518,97 @@ function confirmFullReset() {
     <p id="errorText" style="color: #64748b; font-size: 14px; margin: 15px 0 25px 0; line-height: 1.5;"></p>
     <button class="btn" style="background: #ef4444; width: 100%; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);" onclick="closeError()">OK, I WILL CHECK</button>
 </div>
+<!-- ===== EDIT BILL - FULL ORDER BILL STYLE PANEL ===== -->
+<div id="editBillPanel" class="full-page" style="z-index: 30000; display:none; flex-direction:column; background:#ffffff; font-family:'Inter',sans-serif;">
+
+    <!-- Header -->
+    <div style="padding:20px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; flex-shrink:0;">
+        <div>
+            <b style="font-size:22px; color:#1e293b; letter-spacing:-0.5px;">✏️ EDIT BILL</b>
+            <div id="editPanelBillLabel" style="font-size:12px; color:#64748b; font-weight:600; margin-top:2px;"></div>
+        </div>
+        <button onclick="closeEditBillPanel()" style="border:none; background:#f1f5f9; width:40px; height:40px; border-radius:12px; font-size:20px; color:#64748b; cursor:pointer;">×</button>
+    </div>
+
+    <!-- Items List -->
+    <div id="editItemsList" style="flex:1; overflow-y:auto; padding:15px; -webkit-overflow-scrolling:touch;"></div>
+
+    <!-- Totals & Controls -->
+    <div style="padding:20px; background:#fff; border-top:1px solid #f1f5f9; flex-shrink:0;">
+        
+        <!-- Subtotal row -->
+        <div style="display:flex; justify-content:space-between; font-size:14px; color:#64748b; margin-bottom:8px;">
+            <span>Subtotal</span>
+            <span id="editSubTotal" style="color:#1e293b; font-weight:600;">0.000</span>
+        </div>
+
+        <!-- Discount -->
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
+            <span>Discount (%)</span>
+            <input type="number" id="editDiscount" value="0" min="0" max="100"
+                   oninput="recalcEditTotals()"
+                   style="width:60px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;">
+        </div>
+
+        <!-- Delivery -->
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
+            <span>Delivery (OMR)</span>
+            <input type="number" id="editDelivery" value="0" min="0" step="0.1"
+                   oninput="recalcEditTotals()"
+                   style="width:70px; text-align:right; border:1px solid #e2e8f0; border-radius:6px; padding:3px 8px; font-weight:600;">
+        </div>
+
+        <!-- VAT -->
+        <div style="display:flex; justify-content:space-between; font-size:14px; color:#64748b; margin-bottom:12px;">
+            <span>VAT (5%)</span>
+            <span id="editVat" style="color:#1e293b; font-weight:600;">0.000</span>
+        </div>
+
+        <!-- Grand Total -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+            <span style="font-weight:800; color:#1e293b; font-size:14px;">GRAND TOTAL</span>
+            <span id="editGrandTotal" style="font-size:28px; font-weight:900; color:#00C7C7;">0.000 <small style="font-size:12px;">OMR</small></span>
+        </div>
+
+        <!-- Payment Method -->
+        <div style="display:flex; gap:8px; margin-bottom:18px;">
+            <div onclick="setEditMethod('Transfer')" id="editLbl-t"
+                 style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #00C7C7; border-radius:12px; text-align:center; background:#f0fdfa;">
+                <span style="font-size:16px;">🏦</span><br>
+                <span style="font-size:9px; font-weight:800; color:#1e293b;">TRANSFER</span>
+            </div>
+            <div onclick="setEditMethod('ATM')" id="editLbl-a"
+                 style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+                <span style="font-size:16px;">💳</span><br>
+                <span style="font-size:9px; font-weight:800; color:#64748b;">ATM CARD</span>
+            </div>
+            <div onclick="setEditMethod('Cash')" id="editLbl-c"
+                 style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+                <span style="font-size:16px;">💵</span><br>
+                <span style="font-size:9px; font-weight:800; color:#64748b;">CASH</span>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div style="display:flex; gap:12px;">
+            <button onclick="saveEditedBill()"
+                    style="flex:2; background:#00C7C7; color:white; border:none; padding:16px; border-radius:16px; font-weight:800; font-size:15px; cursor:pointer; box-shadow:0 10px 20px -5px rgba(0,199,199,0.3);">
+                ✅ SAVE CHANGES
+            </button>
+            <button onclick="closeEditBillPanel()"
+                    style="flex:1; background:#f1f5f9; color:#1e293b; border:none; padding:16px; border-radius:16px; font-weight:800; font-size:15px; cursor:pointer;">
+                CANCEL
+            </button>
+        </div>
+    </div>
+
+    <!-- Hidden fields -->
+    <input type="hidden" id="editBillNo">
+    <input type="hidden" id="editDateKey">
+    <input type="hidden" id="editDisplayLabel">
+    <input type="hidden" id="editSelectedMethod" value="Transfer">
+</div>
+
 <div id="billDetailsM" class="modal" style="width: 100%; height: 100%; max-height: 100vh; top: 0; left: 0; transform: none; margin: 0; padding: 0; overflow: hidden; z-index: 20000; display: none; border-radius: 0; background: #fff; flex-direction: column;">
     
     <div style="position: sticky; top: 0; background: #fff; padding: 20px 15px; border-bottom: 2px solid #f1f5f9; z-index: 100; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
