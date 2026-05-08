@@ -261,11 +261,56 @@
         <button class="btn" style="background:var(--secondary); width:100%; margin:10px 0" onclick="document.getElementById('fileInput').click()">📁 CHOOSE FROM GALLERY</button>
         <div class="flex-btn"><button class="btn" style="background:var(--a)" onclick="saveLogo()">SAVE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div>
     </div>
-    <div class="modal" id="catM"><h3 id="catTitle">Category</h3><input type="text" id="cn" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box"><div class="icon-grid" id="icon-selector">
-            <div class="icon-opt" onclick="selIcon(this)">🎂</div><div class="icon-opt" onclick="selIcon(this)">🥐</div><div class="icon-opt" onclick="selIcon(this)">🍞</div><div class="icon-opt" onclick="selIcon(this)">🥨</div><div class="icon-opt" onclick="selIcon(this)">🍪</div><div class="icon-opt" onclick="selIcon(this)">🧁</div><div class="icon-opt" onclick="selIcon(this)">🍩</div><div class="icon-opt" onclick="selIcon(this)">🥤</div><div class="icon-opt" onclick="selIcon(this)">☕</div><div class="icon-opt" onclick="selIcon(this)">🍔</div><div class="icon-opt" onclick="selIcon(this)">🍕</div><div class="icon-opt" onclick="selIcon(this)">🥪</div><div class="icon-opt" onclick="selIcon(this)">🍟</div><div class="icon-opt" onclick="selIcon(this)">🍕</div><div class="icon-opt" onclick="selIcon(this)">🍨</div><div class="icon-opt" onclick="selIcon(this)">🥕</div><div class="icon-opt" onclick="selIcon(this)">🥧</div><div class="icon-opt" onclick="selIcon(this)">🧁</div><div class="icon-opt" onclick="selIcon(this)">🍰</div><div class="icon-opt" onclick="selIcon(this)">🍫</div><div class="icon-opt" onclick="selIcon(this)">🧀</div><div class="icon-opt" onclick="selIcon(this)">🥭</div><div class="icon-opt" onclick="selIcon(this)">🥥</div><div class="icon-opt" onclick="selIcon(this)">🍎</div><div class="icon-opt" onclick="selIcon(this)">🍓</div>
-            
-    </div><div class="flex-btn"><button class="btn" style="background:var(--a)" onclick="saveCat()">SAVE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
-    <div class="modal" id="am"><h3 id="modalTitle">Product</h3><input type="text" id="nn" placeholder="Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd;"><input type="number" id="np" placeholder="Price" step="0.001" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd;"><select id="nc" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd"></select><div class="flex-btn"><button class="btn" style="background:var(--a)" onclick="saveItem()">SAVE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
+    <div class="modal" id="catM" style="max-height:90vh; overflow-y:auto;">
+        <h3 id="catTitle" style="margin:0 0 12px;">Category</h3>
+        
+        <!-- Category Name -->
+        <input type="text" id="cn" placeholder="Category Name" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box; margin-bottom:12px;">
+        
+        <!-- Gallery Photo -->
+        <div style="margin-bottom:14px; text-align:center;">
+            <div style="position:relative; width:90px; height:90px; margin:0 auto 10px;">
+                <div id="catPhotoPreview" style="width:90px; height:90px; border-radius:14px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer;" onclick="document.getElementById('catPhotoInput').click()">
+                    <span id="catPhotoPlaceholder" style="font-size:32px;">📷</span>
+                    <img id="catPhotoImg" style="display:none; width:100%; height:100%; object-fit:cover;">
+                </div>
+                <!-- Remove X button on corner -->
+                <button id="catRemoveBtn" onclick="clearCatPhoto()" style="display:none; position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#ef4444; color:white; border:none; font-size:13px; font-weight:bold; cursor:pointer; line-height:1; z-index:10;">✕</button>
+            </div>
+            <input type="file" id="catPhotoInput" accept="image/*" style="display:none" onchange="previewCatPhoto(this)">
+            <button onclick="document.getElementById('catPhotoInput').click()" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">CHOOSE FROM GALLERY</button>
+        </div>
+
+        <div class="flex-btn">
+            <button class="btn" style="background:var(--a)" onclick="saveCat()">SAVE</button>
+            <button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button>
+        </div>
+    </div>
+    <div class="modal" id="am" style="max-height:90vh; overflow-y:auto;">
+        <h3 id="modalTitle" style="margin:0 0 12px;">Product</h3>
+        
+        <!-- Product Photo with corner X -->
+        <div style="margin-bottom:12px; text-align:center;">
+            <div style="position:relative; width:90px; height:90px; margin:0 auto 10px;">
+                <div id="itemPhotoPreview" style="width:90px; height:90px; border-radius:16px; border:2px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer;" onclick="document.getElementById('itemPhotoInput').click()">
+                    <span id="itemPhotoPlaceholder" style="font-size:32px;">🖼️</span>
+                    <img id="itemPhotoImg" style="display:none; width:100%; height:100%; object-fit:cover;">
+                </div>
+                <!-- Remove X button on corner -->
+                <button id="itemRemoveBtn" onclick="clearItemPhoto()" style="display:none; position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:#ef4444; color:white; border:none; font-size:13px; font-weight:bold; cursor:pointer; line-height:1; z-index:10;">✕</button>
+            </div>
+            <input type="file" id="itemPhotoInput" accept="image/*" style="display:none" onchange="previewItemPhoto(this)">
+            <button onclick="document.getElementById('itemPhotoInput').click()" style="width:100%; padding:10px; border-radius:10px; border:1px solid #e2e8f0; background:#f8fafc; color:#3b82f6; font-weight:700; font-size:13px; cursor:pointer;">CHOOSE FROM GALLERY</button>
+        </div>
+
+        <input type="text" id="nn" placeholder="Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box;">
+        <input type="number" id="np" placeholder="Price" step="0.001" style="width:100%; padding:12px; margin-bottom:10px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box;">
+        <select id="nc" style="width:100%; padding:12px; border-radius:12px; border:1px solid #ddd; box-sizing:border-box;"></select>
+        <div class="flex-btn">
+            <button class="btn" style="background:var(--a)" onclick="saveItem()">SAVE</button>
+            <button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button>
+        </div>
+    </div>
     <div class="modal" id="settingsM"><h3>Settings</h3>
         <button class="btn" style="background:var(--primary); width:100%; margin-bottom:10px" onclick="closeM(); show('logoM')">🖼️ UPDATE LOGO</button>
         <button class="btn" style="background:var(--a); width:100%; margin-bottom:10px" onclick="closeM(); showCatM()">➕ ADD CATEGORY</button>
@@ -316,7 +361,7 @@
         
         <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
             <b style="color: #64748b; font-size:10px; display:block; margin-bottom:8px">📅 DATE RANGE</b>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <input type="date" id="exportStart" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
                 <input type="date" id="exportEnd" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
                 <button class="pos-btn" style="background:#3b82f6; height: 32px; font-size:11px; border-radius:6px;" onclick="setTodayDate()">TODAY</button>
@@ -409,9 +454,9 @@ function updatePayStyle(method) {
 
 <script>
     let menu = JSON.parse(localStorage.getItem('asb_m')) || [], 
-        cats = JSON.parse(localStorage.getItem('asb_c')) || [{n:'Cakes', i:'🎂'}, {n:'Snacks', i:'🥐'}], 
+        cats = JSON.parse(localStorage.getItem('asb_c')) || [{n:'Cakes', i:''}, {n:'Snacks', i:''}], 
         cart = [];
-    let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '📂';
+    let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '';
     
     function initApp() { loadSavedLogo(); 
     location.hash = 'home'; render(); }
@@ -561,29 +606,67 @@ function updatePayStyle(method) {
 
 
     function showPreview() { if(!cart.length) return; let sub = 0, itemsHtml = ''; cart.forEach(i => { sub += i.price * i.qty; itemsHtml += `<div style="display:flex; justify-content:space-between; border-bottom: 1px dotted #eee; padding: 4px 0;"><span>${i.name} x${i.qty}</span><span>${(i.price*i.qty).toFixed(3)}</span></div>`; }); let dp = parseFloat(document.getElementById('disc-val').value) || 0, dlv = parseFloat(document.getElementById('deliv-val').value) || 0; let ad = sub - (sub * (dp / 100)), vt = ad * 0.05, g = ad + vt + dlv; document.getElementById('preview-content').innerHTML = `<b>Items:</b>${itemsHtml}<div style="margin-top:10px"><b>Total: OMR ${g.toFixed(3)}</b></div>`; show('previewM'); }
-    function render() { let c = document.getElementById('m'), q = document.getElementById('s').value.toLowerCase(), hb = document.getElementById('hb'); c.innerHTML = ''; if (!curCat && !q) { hb.style.display = "none"; cats.forEach(cat => { let d = document.createElement('div'); d.className = 'pc' + (selSet.has(cat.n) ? ' sel' : ''); d.innerHTML = `<span style="font-size:32px">${cat.i || '📂'}</span><br>${cat.n}`; d.onclick = () => { if(isCatMulti){ selSet.has(cat.n) ? selSet.delete(cat.n) : selSet.add(cat.n); updateBar(); render(); } else location.hash = 'cat-' + cat.n; }; c.appendChild(d); }); } else { hb.style.display = "block"; let list = q ? menu.filter(i => i.name.toLowerCase().includes(q)) : menu.filter(i => i.cat === curCat); list.forEach(i => { let d = document.createElement('div'); d.className = 'pc' + (selSet.has(i.id) ? ' sel' : ''); d.innerHTML = `<span class="cat-badge">${i.cat}</span><b>${i.name}</b><br><b style="color:var(--a)">${i.price.toFixed(3)}</b>`; d.onclick = () => { if(isMulti){ selSet.has(i.id) ? selSet.delete(i.id) : selSet.add(i.id); updateBar(); render(); } else addToCart(i); }; c.appendChild(d); }); } }
+    function render() { 
+        let c = document.getElementById('m'), q = document.getElementById('s').value.toLowerCase(), hb = document.getElementById('hb'); 
+        c.innerHTML = ''; 
+        if (!curCat && !q) { 
+            hb.style.display = "none"; 
+            cats.forEach(cat => { 
+                let d = document.createElement('div'); 
+                d.className = 'pc' + (selSet.has(cat.n) ? ' sel' : ''); 
+                // Photo or emoji
+                let mediaHtml = '';
+                if (cat.photo) {
+                    mediaHtml = `<img src="${cat.photo}" style="width:60px;height:60px;object-fit:cover;border-radius:12px;margin-bottom:4px;">`;
+                } else {
+                    mediaHtml = `<span style="font-size:36px;">${cat.i || ''}</span>`;
+                }
+                d.innerHTML = `${mediaHtml}<br><b style="font-size:13px;">${cat.n}</b><br><small style="font-size:10px;color:#94a3b8;font-weight:600;">Category</small>`; 
+                d.onclick = () => { if(isCatMulti){ selSet.has(cat.n) ? selSet.delete(cat.n) : selSet.add(cat.n); updateBar(); render(); } else location.hash = 'cat-' + cat.n; }; 
+                c.appendChild(d); 
+            }); 
+        } else { 
+            hb.style.display = "block"; 
+            let list = q ? menu.filter(i => i.name.toLowerCase().includes(q)) : menu.filter(i => i.cat === curCat); 
+            list.forEach(i => { 
+                let d = document.createElement('div'); 
+                d.className = 'pc' + (selSet.has(i.id) ? ' sel' : ''); 
+                // Item photo or category emoji
+                let itemMedia = '';
+                if (i.photo) {
+                    itemMedia = `<img src="${i.photo}" style="width:64px;height:64px;object-fit:cover;border-radius:12px;margin-bottom:4px;">`;
+                } else {
+                    itemMedia = '';
+                }
+                d.innerHTML = `${itemMedia}<span class="cat-badge">${i.cat}</span><b>${i.name}</b><br><b style="color:var(--a)">${i.price.toFixed(3)}</b>`; 
+                d.onclick = () => { if(isMulti){ selSet.has(i.id) ? selSet.delete(i.id) : selSet.add(i.id); updateBar(); render(); } else addToCart(i); }; 
+                c.appendChild(d); 
+            }); 
+        } 
+    }
     
 
 function saveCat() {
     let v = document.getElementById('cn').value.trim();
     if (!v) return;
 
-    // --- CATEGORY DUPLICATE CHECK ---
-    // Agar hum nayi category add kar rahe hain (editCatName nahi hai)
+    // Get photo - only if visible
+    let catPhoto = null;
+    let catPhotoImg = document.getElementById('catPhotoImg');
+    if (catPhotoImg.style.display !== 'none' && catPhotoImg.src && catPhotoImg.src.length > 10) {
+        catPhoto = catPhotoImg.src;
+    }
+
     if (!editCatName) {
         let catExists = cats.find(c => c.n.toLowerCase() === v.toLowerCase());
-        if (catExists) {
-            showError(`"${v}" Category Already exists!`); // Wahi professional popup use hoga
-            return; // Code yahin ruk jayega
-        }
+        if (catExists) { showError(`"${v}" Category Already exists!`); return; }
     }
-    // --------------------------------
 
     if (editCatName) {
-        cats = cats.map(c => c.n === editCatName ? { n: v, i: selectedIcon } : c);
+        cats = cats.map(c => c.n === editCatName ? { n: v, i: selectedIcon, photo: catPhoto } : c);
         menu.forEach(i => { if (i.cat === editCatName) i.cat = v; });
     } else {
-        cats.push({ n: v, i: selectedIcon });
+        cats.push({ n: v, i: selectedIcon, photo: catPhoto });
     }
     
     saveAll();
@@ -595,24 +678,25 @@ function saveCat() {
     let n = document.getElementById('nn').value.trim();
     let p = parseFloat(document.getElementById('np').value);
     let c = document.getElementById('nc').value;
-
     if (!n || isNaN(p)) return;
 
-    // --- DUPLICATE CHECK START ---
-    // Agar hum naya item add kar rahe hain (editId nahi hai)
+    // Get photo - only if visible
+    let itemPhoto = null;
+    let itemPhotoImg = document.getElementById('itemPhotoImg');
+    if (itemPhotoImg.style.display !== 'none' && itemPhotoImg.src && itemPhotoImg.src.length > 10) {
+        itemPhoto = itemPhotoImg.src;
+    }
+
     if (!editId) {
         let exists = menu.find(x => x.name.toLowerCase() === n.toLowerCase());
-        if (exists) {
-            showError(`item Already in "${exists.cat}" category.`);
-            return; // Yahin se wapas mud jao, save mat karo
-        }
+        if (exists) { showError(`item Already in "${exists.cat}" category.`); return; }
     }
-    // --- DUPLICATE CHECK END ---
 
     if (editId) {
-        Object.assign(menu.find(x => x.id === editId), { name: n, price: p, cat: c });
+        let existing = menu.find(x => x.id === editId);
+        Object.assign(existing, { name: n, price: p, cat: c, photo: itemPhoto });
     } else {
-        menu.push({ id: Date.now(), name: n, price: p, cat: c });
+        menu.push({ id: Date.now(), name: n, price: p, cat: c, photo: itemPhoto });
     }
 
     saveAll();
@@ -718,15 +802,118 @@ function updateCartUI(rebuildList = true) {
     function updateBar() { document.getElementById('sc').innerText = `${selSet.size} Selected`; document.getElementById('edBtn').style.display = selSet.size === 1 ? "block" : "none"; let d = document.getElementById('delBtn'); d.disabled = !selSet.size; d.style.opacity = selSet.size ? "1" : "0.5"; }
     function handleDeleteAsk() { show('delConfirmM'); }
     function confirmDelete() { if(isCatMulti) { cats = cats.filter(c => !selSet.has(c.n)); menu = menu.filter(i => !selSet.has(i.cat)); } else { menu = menu.filter(i => !selSet.has(i.id)); } saveAll(); exitMulti(); closeM(); }
-    function handleEdit() { let val = Array.from(selSet)[0]; if(isCatMulti) { editCatName = val; let c = cats.find(x => x.n === val); document.getElementById('cn').value = val; show('catM'); } else { editId = val; let i = menu.find(x => x.id === editId); document.getElementById('nn').value = i.name; document.getElementById('np').value = i.price; show('am'); } }
+    function handleEdit() { 
+        let val = Array.from(selSet)[0]; 
+        if(isCatMulti) { 
+            editCatName = val; 
+            let c = cats.find(x => x.n === val); 
+            document.getElementById('cn').value = val; 
+            if (c && c.photo) {
+                let img = document.getElementById('catPhotoImg');
+                img.src = c.photo;
+                img.style.display = 'block';
+                document.getElementById('catPhotoPlaceholder').style.display = 'none';
+                document.getElementById('catRemoveBtn').style.display = 'block';
+            } else {
+                document.getElementById('catPhotoImg').style.display = 'none';
+                document.getElementById('catPhotoImg').src = '';
+                document.getElementById('catPhotoPlaceholder').style.display = 'block';
+                document.getElementById('catRemoveBtn').style.display = 'none';
+            }
+            show('catM'); 
+        } else { 
+            editId = val; 
+            let i = menu.find(x => x.id === editId); 
+            document.getElementById('nn').value = i.name; 
+            document.getElementById('np').value = i.price; 
+            let s = document.getElementById('nc'); 
+            s.innerHTML = cats.map(c => `<option value="${c.n}" ${c.n===i.cat?'selected':''}>${c.n}</option>`).join('');
+            if (i.photo) {
+                let img = document.getElementById('itemPhotoImg');
+                img.src = i.photo;
+                img.style.display = 'block';
+                document.getElementById('itemPhotoPlaceholder').style.display = 'none';
+                document.getElementById('itemRemoveBtn').style.display = 'block';
+            } else {
+                document.getElementById('itemPhotoImg').style.display = 'none';
+                document.getElementById('itemPhotoImg').src = '';
+                document.getElementById('itemPhotoPlaceholder').style.display = 'block';
+                document.getElementById('itemRemoveBtn').style.display = 'none';
+            }
+            show('am'); 
+        } 
+    }
     function enableCatMulti() { isCatMulti = true; isMulti = false; curCat = null; selSet.clear(); updateBar(); document.getElementById('eb').style.display = 'flex'; closeM(); render(); }
     function toggleMulti() { isMulti = true; isCatMulti = false; selSet.clear(); updateBar(); document.getElementById('eb').style.display = 'flex'; closeM(); render(); }
     function exitMulti() { isMulti = false; isCatMulti = false; selSet.clear(); document.getElementById('eb').style.display = 'none'; render(); }
     
     
     function saveAll() { localStorage.setItem('asb_m', JSON.stringify(menu)); localStorage.setItem('asb_c', JSON.stringify(cats)); render(); }
-    function showCatM() { editCatName = null; show('catM'); }
-    function showAdd() { editId = null; let s = document.getElementById('nc'); s.innerHTML = cats.map(c => `<option value="${c.n}">${c.n}</option>`).join(''); show('am'); }
+    function showCatM() { 
+        editCatName = null; 
+        document.getElementById('catPhotoImg').style.display = 'none';
+        document.getElementById('catPhotoImg').src = '';
+        document.getElementById('catPhotoPlaceholder').style.display = 'block';
+        document.getElementById('catRemoveBtn').style.display = 'none';
+        document.getElementById('cn').value = '';
+        show('catM'); 
+    }
+    function showAdd() { 
+        editId = null; 
+        document.getElementById('itemPhotoImg').style.display = 'none';
+        document.getElementById('itemPhotoImg').src = '';
+        document.getElementById('itemPhotoPlaceholder').style.display = 'block';
+        document.getElementById('itemRemoveBtn').style.display = 'none';
+        document.getElementById('nn').value = '';
+        document.getElementById('np').value = '';
+        let s = document.getElementById('nc'); 
+        s.innerHTML = cats.map(c => `<option value="${c.n}">${c.n}</option>`).join(''); 
+        show('am'); 
+    }
+
+    // ===== PHOTO PREVIEW FUNCTIONS =====
+    function previewCatPhoto(input) {
+        if (!input.files || !input.files[0]) return;
+        let reader = new FileReader();
+        reader.onloadend = function() {
+            let img = document.getElementById('catPhotoImg');
+            img.src = reader.result;
+            img.style.display = 'block';
+            document.getElementById('catPhotoPlaceholder').style.display = 'none';
+            document.getElementById('catRemoveBtn').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    function clearCatPhoto() {
+        document.getElementById('catPhotoImg').style.display = 'none';
+        document.getElementById('catPhotoImg').src = '';
+        document.getElementById('catPhotoPlaceholder').style.display = 'block';
+        document.getElementById('catPhotoInput').value = '';
+        document.getElementById('catRemoveBtn').style.display = 'none';
+    }
+
+    function previewItemPhoto(input) {
+        if (!input.files || !input.files[0]) return;
+        let reader = new FileReader();
+        reader.onloadend = function() {
+            let img = document.getElementById('itemPhotoImg');
+            img.src = reader.result;
+            img.style.display = 'block';
+            document.getElementById('itemPhotoPlaceholder').style.display = 'none';
+            document.getElementById('itemRemoveBtn').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+
+    function clearItemPhoto() {
+        document.getElementById('itemPhotoImg').style.display = 'none';
+        document.getElementById('itemPhotoImg').src = '';
+        document.getElementById('itemPhotoPlaceholder').style.display = 'block';
+        document.getElementById('itemPhotoInput').value = '';
+        document.getElementById('itemRemoveBtn').style.display = 'none';
+    }
+    // ===================================
     function clearCart() { cart = []; updateCartUI(); if(location.hash === '#cart') history.back(); }
     
     
