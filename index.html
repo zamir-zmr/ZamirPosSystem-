@@ -925,7 +925,7 @@ function showReports() {
     
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
     const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const curMonth = now.getMonth();
     const curYear = now.getFullYear();
 
@@ -1554,7 +1554,7 @@ function logSale(total, bNo) {
 
     const newSale = {
         billNo: bNo,
-        date: now.toISOString().split('T')[0],
+        date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
         time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit',second: '2-digit', hour12: true }),
         amount: parseFloat(total), 
         method: selectedMethod, 
