@@ -332,8 +332,8 @@
             <button onclick="document.getElementById('receipt-preview-modal').style.display='none'" style="background:#ef4444; color:white; border:none; padding:8px 14px; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px;">✕ CLOSE</button>
         </div>
         <!-- Receipt display area -->
-        <div style="background:#e8e8e8; padding:20px; display:flex; justify-content:center;">
-            <div id="receipt-preview-box" style="background:#fff; padding:10px; border-radius:4px; box-shadow:0 4px 20px rgba(0,0,0,0.2); min-width:302px;"></div>
+        <div style="background:#e8e8e8; padding:16px; display:flex; justify-content:center; max-height:70vh; overflow-y:auto; -webkit-overflow-scrolling:touch;">
+            <div id="receipt-preview-box" style="background:#fff; padding:8px; border-radius:4px; box-shadow:0 4px 20px rgba(0,0,0,0.2);"></div>
         </div>
         <!-- Print again button -->
         <div style="background:#1e293b; padding:14px 20px;">
@@ -552,95 +552,82 @@ function updatePayStyle(method) {
     cart.forEach(item => {
         let it = item.price * item.qty;
         itemsHTML += '<tr>' +
-            '<td style="padding:5px 4px;font-size:14px;">' + item.name + '</td>' +
-            '<td style="text-align:center;padding:5px 4px;font-size:14px;">' + item.qty + '</td>' +
-            '<td style="text-align:right;padding:5px 4px;font-size:14px;">' + item.price.toFixed(3) + '</td>' +
-            '<td style="text-align:right;padding:5px 4px;font-size:14px;">' + it.toFixed(3) + '</td>' +
+            '<td style="padding:4px 2px;font-size:8px;">' + item.name + '</td>' +
+            '<td style="text-align:center;padding:4px 2px;font-size:8px;">' + item.qty + '</td>' +
+            '<td style="text-align:right;padding:4px 2px;font-size:8px;">' + item.price.toFixed(3) + '</td>' +
+            '<td style="text-align:right;padding:4px 2px;font-size:8px;">' + it.toFixed(3) + '</td>' +
             '</tr>';
     });
 
     // Logo HTML
     let savedPhoto = localStorage.getItem('savedPhotoUrl');
     let logoHTML = savedPhoto
-        ? '<img src="' + savedPhoto + '" style="width:130px;height:130px;object-fit:cover;border-radius:50%;">'
-        : '<div style="width:130px;height:130px;border-radius:50%;background:linear-gradient(135deg,#00C7C7,#3b82f6);display:flex;flex-direction:column;align-items:center;justify-content:center;"><b style="color:#FFFF00;font-size:28px;font-weight:900;">ASH</b><span style="color:#FFFF00;font-size:10px;">BAKES</span></div>';
+        ? '<img src="' + savedPhoto + '" style="width:60px;height:60px;object-fit:cover;border-radius:50%;">'
+        : '<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#00C7C7,#3b82f6);display:flex;flex-direction:column;align-items:center;justify-content:center;"><b style="color:#FFFF00;font-size:14px;font-weight:900;">ASH</b><span style="color:#FFFF00;font-size:5px;">BAKES</span></div>';
 
     // Discount row
     let discRow = discAmt > 0
-        ? '<tr><td colspan="3" style="font-size:14px;padding:4px;">Discount (' + dp + '%)</td><td style="text-align:right;font-size:14px;padding:4px;">-' + discAmt.toFixed(3) + '</td></tr>'
+        ? '<tr><td colspan="3" style="font-size:7px;padding:2px;">Discount (' + dp + '%)</td><td style="text-align:right;font-size:7px;padding:2px;">-' + discAmt.toFixed(3) + '</td></tr>'
         : '';
 
     // Delivery row
     let dlvRow = dlv > 0
-        ? '<tr><td colspan="3" style="font-size:14px;padding:4px;">Delivery Charges</td><td style="text-align:right;font-size:14px;padding:4px;">' + dlv.toFixed(3) + '</td></tr>'
+        ? '<tr><td colspan="3" style="font-size:7px;padding:2px;">Delivery Charges</td><td style="text-align:right;font-size:7px;padding:2px;">' + dlv.toFixed(3) + '</td></tr>'
         : '';
 
-    // Dashed line helper
-    var dash = '<div style="border-top:2px dashed #aaa;margin:10px 0;"></div>';
+    var dash = '<div style="border-top:1px dashed #aaa;margin:5px 0;"></div>';
 
-    // Build full receipt HTML - matching Image 1 PDF style exactly
     var receiptHTML =
-        '<div id="thermal-receipt" style="font-family:Arial,sans-serif;width:100%;max-width:420px;margin:0 auto;background:#fff;padding:24px 20px;color:#111;">' +
+        '<div id="thermal-receipt" style="font-family:Courier New,Courier,monospace;width:220px;margin:0 auto;background:#fff;padding:10px 8px;color:#111;">' +
 
-            // Logo
-            '<div style="text-align:center;margin-bottom:14px;">' + logoHTML + '</div>' +
+            '<div style="text-align:center;margin-bottom:6px;">' + logoHTML + '</div>' +
 
-            // Shop info
-            '<div style="text-align:center;margin-bottom:12px;">' +
-                '<div style="font-size:17px;font-weight:600;">AL SEEB</div>' +
-                '<div style="font-size:14px;color:#444;">Sultanate of oman</div>' +
-                '<div style="font-size:14px;color:#444;">97060084</div>' +
-                '<div style="font-size:18px;font-weight:900;margin-top:6px;">Take Away Hall</div>' +
+            '<div style="text-align:center;margin-bottom:5px;">' +
+                '<div style="font-size:9px;font-weight:700;">AL SEEB</div>' +
+                '<div style="font-size:7px;color:#555;">Sultanate of oman</div>' +
+                '<div style="font-size:7px;color:#555;">97060084</div>' +
+                '<div style="font-size:10px;font-weight:900;margin-top:3px;">Take Away Hall</div>' +
             '</div>' +
 
             dash +
 
-            // Bill info
-            '<div style="font-size:16px;font-weight:700;margin-bottom:4px;">Bill no : ' + billCount + '</div>' +
-            '<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:2px;">' +
-                '<span>Date : ' + dateStr + '</span>' +
-                '<span>Time : ' + timeStr + '</span>' +
+            '<div style="font-size:8px;font-weight:700;margin-bottom:2px;">Bill no: ' + billCount + '</div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:7px;color:#444;">' +
+                '<span>Date : ' + dateStr + '</span><span>Time : ' + timeStr + '</span>' +
             '</div>' +
-            '<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px;">' +
+            '<div style="display:flex;justify-content:space-between;font-size:7px;color:#444;margin-bottom:4px;">' +
                 '<span>' + shift + '</span><span>Admin</span>' +
             '</div>' +
 
             dash +
 
-            // Table header
             '<table style="width:100%;border-collapse:collapse;">' +
-                '<thead>' +
-                    '<tr>' +
-                        '<th style="text-align:left;font-size:15px;font-weight:700;padding:5px 4px;border-bottom:2px dashed #aaa;">Item</th>' +
-                        '<th style="text-align:center;font-size:15px;font-weight:700;padding:5px 4px;border-bottom:2px dashed #aaa;">Qty</th>' +
-                        '<th style="text-align:right;font-size:15px;font-weight:700;padding:5px 4px;border-bottom:2px dashed #aaa;">Price</th>' +
-                        '<th style="text-align:right;font-size:15px;font-weight:700;padding:5px 4px;border-bottom:2px dashed #aaa;">Amount</th>' +
-                    '</tr>' +
-                '</thead>' +
+                '<thead><tr>' +
+                    '<th style="text-align:left;font-size:8px;font-weight:700;padding:2px 2px;border-bottom:1px dashed #aaa;">Item</th>' +
+                    '<th style="text-align:center;font-size:8px;font-weight:700;padding:2px 2px;border-bottom:1px dashed #aaa;">Qty</th>' +
+                    '<th style="text-align:right;font-size:8px;font-weight:700;padding:2px 2px;border-bottom:1px dashed #aaa;">Price</th>' +
+                    '<th style="text-align:right;font-size:8px;font-weight:700;padding:2px 2px;border-bottom:1px dashed #aaa;">Amount</th>' +
+                '</tr></thead>' +
                 '<tbody>' + itemsHTML + '</tbody>' +
             '</table>' +
 
             dash +
 
-            // VAT / Discount / Delivery
             '<table style="width:100%;border-collapse:collapse;">' +
                 discRow +
-                '<tr><td colspan="3" style="font-size:14px;padding:4px;">VAT Amt (5%)</td><td style="text-align:right;font-size:14px;padding:4px;">' + vt.toFixed(3) + '</td></tr>' +
+                '<tr><td colspan="3" style="font-size:7px;padding:2px;">VAT Amt (5%)</td><td style="text-align:right;font-size:7px;padding:2px;">' + vt.toFixed(3) + '</td></tr>' +
                 dlvRow +
             '</table>' +
 
-            // Grand Total
-            '<div style="text-align:right;border-top:2px solid #333;margin-top:8px;padding-top:6px;">' +
-                '<span style="font-size:22px;font-weight:900;">GTotal:&nbsp;&nbsp;' + g.toFixed(3) + '</span>' +
+            '<div style="text-align:right;border-top:1px solid #333;margin-top:4px;padding-top:3px;">' +
+                '<span style="font-size:12px;font-weight:900;">GTotal: ' + g.toFixed(3) + '</span>' +
             '</div>' +
 
             dash +
-
-            '<div style="font-size:16px;font-weight:700;">Items / Qty :&nbsp;&nbsp;' + cart.length + ' / ' + totalQty + '</div>' +
-
+            '<div style="font-size:8px;font-weight:700;">Items / Qty :  ' + cart.length + ' / ' + totalQty + '</div>' +
             dash +
 
-            '<div style="text-align:center;font-size:12px;color:#666;margin-top:6px;">Generated by ASH BAKES POS System</div>' +
+            '<div style="text-align:center;font-size:6px;color:#666;margin-top:3px;">Generated by ASH BAKES POS System</div>' +
         '</div>';
 
     // Show receipt preview on screen
