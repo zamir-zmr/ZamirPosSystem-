@@ -318,7 +318,29 @@
         <button class="btn" style="background:var(--secondary); width:100%; margin-bottom:10px" onclick="toggleMulti()">🛠️ MULTI-SELECT ITEMS</button>
         <button class="btn" style="width:100%; background:var(--slate)" onclick="closeM()">CLOSE</button>
     </div>
-    <div class="modal" id="previewM"><h3>Receipt</h3><div id="preview-content"></div><div class="flex-btn"><button class="btn" style="background:var(--primary)" onclick="executePrint()">PRINT</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
+    <div class="modal" id="previewM"><h3>Receipt</h3><div id="preview-content"></div><div class="flex-btn"><button class="btn" style="background:var(--primary)" onclick="executePrint()">🖨️ PRINT</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
+
+<!-- Thermal Receipt Preview Modal (Full Screen) -->
+<div id="receipt-preview-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:99999; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px; overflow-y:auto; backdrop-filter:blur(4px);">
+    <div style="width:100%; max-width:400px; background:#f0f0f0; border-radius:16px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        <!-- Header bar -->
+        <div style="background:#1e293b; padding:14px 20px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <div style="color:#00C7C7; font-weight:800; font-size:15px;">✅ Bill Generated!</div>
+                <div style="color:#94a3b8; font-size:11px; margin-top:2px;">Thermal printer pe print ho raha hai...</div>
+            </div>
+            <button onclick="document.getElementById('receipt-preview-modal').style.display='none'" style="background:#ef4444; color:white; border:none; padding:8px 14px; border-radius:8px; font-weight:700; cursor:pointer; font-size:13px;">✕ CLOSE</button>
+        </div>
+        <!-- Receipt display area -->
+        <div style="background:#e8e8e8; padding:20px; display:flex; justify-content:center;">
+            <div id="receipt-preview-box" style="background:#fff; padding:10px; border-radius:4px; box-shadow:0 4px 20px rgba(0,0,0,0.2); min-width:302px;"></div>
+        </div>
+        <!-- Print again button -->
+        <div style="background:#1e293b; padding:14px 20px;">
+            <button onclick="printThermalReceipt()" style="width:100%; background:#00C7C7; color:white; border:none; padding:14px; border-radius:12px; font-weight:800; font-size:15px; cursor:pointer;">🖨️ DUBARA PRINT KARO</button>
+        </div>
+    </div>
+</div>
     <div class="modal" id="delConfirmM"><h3>Delete?</h3><div class="flex-btn"><button class="btn" style="background:var(--d)" onclick="confirmDelete()">DELETE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
     <div class="modal" id="dupM"><div style="text-align:center"><h3>⚠️ Duplicated</h3><p id="dupMsg"></p><button class="btn" style="background:var(--secondary); width:100%" onclick="closeDup()">OK</button></div></div>
 
@@ -501,14 +523,6 @@ function updatePayStyle(method) {
     function loadSavedLogo() { let savedPhoto = localStorage.getItem('savedPhotoUrl'); if (savedPhoto) displayLogo(savedPhoto); }
 
     async function executePrint() {
-    const { jsPDF } = window.jspdf;
-    const itemRowH = 6; 
-    const headH = 95; 
-    const footH = 65;
-    const dynH = headH + (cart.length * itemRowH) + footH + 20; 
-    const doc = new jsPDF({ unit: 'mm', format: [80, dynH] });
-    const LEFT = 5, CENTER = 40, RIGHT = 75; let y = 10;
-    
     const now = new Date(); 
     const dateStr = now.toLocaleDateString('en-GB'); 
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); 
@@ -525,93 +539,149 @@ function updatePayStyle(method) {
     localStorage.setItem('asb_last_date', todayLocal);
     localStorage.setItem('asb_bill_count', billCount);
 
-    // Logo
-    let savedPhoto = localStorage.getItem('savedPhotoUrl');
-    if (savedPhoto) { try { doc.addImage(savedPhoto, 'PNG', 20, y, 40, 40); y += 45; } catch (e) { y += 5; } }
-
-    // Header Info
-    doc.setFontSize(10); doc.text("AL SEEB", CENTER, y, {align:'center'}); y += 4;
-    doc.setFontSize(8); doc.text("Sultanate of oman", CENTER, y, {align:'center'}); y += 4;
-    doc.text("97060084", CENTER, y, {align:'center'}); y += 6;
-    doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text("Take Away Hall", CENTER, y, {align:'center'}); y += 8;
-
-    // Bill Details
-    doc.setFontSize(10); doc.text( "Bill no: " + billCount, LEFT, y); y += 5;
-    doc.setFontSize(8); doc.setFont("helvetica", "normal");
-    doc.text("Date : " + dateStr, LEFT, y); doc.text("Time : " + timeStr, RIGHT, y, {align: 'right'}); y += 4;
-    doc.text(shift + "", LEFT, y); doc.text("Admin", RIGHT, y, {align: 'right'}); y += 5;
-
-    // --- Professional Table Header ---
-    doc.setLineWidth(0.3);
-    doc.setLineDashPattern([1, 1], 0);
-    doc.line(LEFT, y, RIGHT, y); y += 4;
-    doc.setFont("helvetica", "bold");
-    doc.text("Item", LEFT, y);
-    doc.text("Qty", CENTER + 5, y, {align: 'right'});
-    doc.text("Price", CENTER + 18, y, {align: 'right'});
-    doc.text("Amount", RIGHT, y, {align: 'right'});
-    y += 2; doc.line(LEFT, y, RIGHT, y); y += 6;
-
-    // Items Loop
-    let sub = 0; let totalQty = 0;
-    doc.setFont("helvetica", "normal");
-    cart.forEach(item => { 
-        let it = item.price * item.qty; sub += it; totalQty += item.qty;
-        doc.text(item.name, LEFT, y); 
-        doc.text(item.qty.toString(), CENTER + 5, y, {align: 'right'}); 
-        doc.text(item.price.toFixed(3), CENTER + 18, y, {align: 'right'});
-        doc.text(it.toFixed(3), RIGHT, y, {align: 'right'}); 
-        y += itemRowH; 
-    });
-
-    // Calculations logic
-    let dp = parseFloat(document.getElementById('disc-val').value) || 0, 
-        dlv = parseFloat(document.getElementById('deliv-val').value) || 0; 
+    // Calculations
+    let sub = 0, totalQty = 0;
+    cart.forEach(item => { sub += item.price * item.qty; totalQty += item.qty; });
+    let dp = parseFloat(document.getElementById('disc-val').value) || 0;
+    let dlv = parseFloat(document.getElementById('deliv-val').value) || 0;
     let discAmt = sub * (dp / 100);
     let ad = sub - discAmt, vt = ad * 0.05, g = ad + vt + dlv;
 
-    y += 2; doc.line(LEFT, y, RIGHT, y); y += 5;
+    // Items rows HTML
+    let itemsHTML = '';
+    cart.forEach(item => {
+        let it = item.price * item.qty;
+        itemsHTML += `
+        <tr>
+            <td style="padding:4px 2px; font-size:12px;">${item.name}</td>
+            <td style="text-align:center; padding:4px 2px; font-size:12px;">${item.qty}</td>
+            <td style="text-align:right; padding:4px 2px; font-size:12px;">${item.price.toFixed(3)}</td>
+            <td style="text-align:right; padding:4px 2px; font-size:12px;">${it.toFixed(3)}</td>
+        </tr>`;
+    });
+
+    // Logo HTML
+    let savedPhoto = localStorage.getItem('savedPhotoUrl');
+    let logoHTML = savedPhoto 
+        ? `<img src="${savedPhoto}" style="width:80px;height:80px;object-fit:cover;border-radius:50%;border:3px solid #00C7C7;">`
+        : `<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#00C7C7,#3b82f6);display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 4px 12px rgba(0,199,199,0.4);"><b style="color:#FFFF00;font-size:18px;font-weight:900;">ASH</b><span style="color:#FFFF00;font-size:7px;font-weight:700;letter-spacing:1px;">BAKES</span></div>`;
+
+    // Discount row
+    let discRow = discAmt > 0 ? `
+        <tr><td colspan="3" style="font-size:11px; padding:2px;">Discount (${dp}%)</td><td style="text-align:right;font-size:11px;padding:2px;">-${discAmt.toFixed(3)}</td></tr>` : '';
     
-    // Summary Rows
-    doc.setFontSize(9);
-    if (discAmt > 0) {
-        doc.text("Discount (" + dp + "%)", LEFT, y);
-        doc.text("-" + discAmt.toFixed(3), RIGHT, y, {align: 'right'});
-        y += 5;
-    }
-    doc.text("VAT Amt (5%)", LEFT, y);
-    doc.text(vt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
+    // Delivery row
+    let dlvRow = dlv > 0 ? `
+        <tr><td colspan="3" style="font-size:11px; padding:2px;">Delivery Charges</td><td style="text-align:right;font-size:11px;padding:2px;">${dlv.toFixed(3)}</td></tr>` : '';
 
-    if (dlv > 0) {
-        doc.text("Delivery Charges", LEFT, y);
-        doc.text(dlv.toFixed(3), RIGHT, y, {align: 'right'});
-        y += 5;
-    }
+    // Build full receipt HTML for screen preview
+    const receiptHTML = `
+    <div id="thermal-receipt" style="
+        font-family: 'Courier New', Courier, monospace;
+        width: 302px;
+        margin: 0 auto;
+        background: #fff;
+        padding: 16px 10px;
+        box-shadow: 0 4px 30px rgba(0,0,0,0.15);
+        border-radius: 8px;
+        color: #111;
+    ">
+        <div style="text-align:center; margin-bottom:10px;">
+            ${logoHTML}
+        </div>
+        <div style="text-align:center; margin-bottom:8px;">
+            <div style="font-size:13px; font-weight:700;">AL SEEB</div>
+            <div style="font-size:11px; color:#555;">Sultanate of oman</div>
+            <div style="font-size:11px; color:#555;">97060084</div>
+            <div style="font-size:14px; font-weight:900; margin-top:4px;">Take Away Hall</div>
+        </div>
 
-    // Grand Total (Highlighted)
-    doc.setLineDashPattern([], 0); // Solid line for total
-    doc.line(RIGHT - 30, y, RIGHT, y); y += 6;
-    doc.setFontSize(14); doc.setFont("helvetica", "bold");
-    doc.text("GTotal:", CENTER, y); 
-    doc.text(g.toFixed(3), RIGHT, y, {align: 'right'}); y += 8;
-    
-    // Items Count Summary
-    doc.setFontSize(10); doc.setLineDashPattern([1, 1], 0);
-    doc.line(LEFT, y, RIGHT, y); y += 5;
-    doc.text("Items / Qty :    " + cart.length + " / " + totalQty, LEFT, y);
-    y += 5; doc.line(LEFT, y, RIGHT, y); y += 7;
+        <div style="border-top:1px dashed #999; margin:8px 0;"></div>
 
-    doc.setFontSize(7); doc.setFont("helvetica", "normal");
-    doc.text("Generated by ASH BAKES POS System", CENTER, y, {align: 'center'});
+        <div style="font-size:12px; font-weight:700; margin-bottom:2px;">Bill no: ${billCount}</div>
+        <div style="display:flex; justify-content:space-between; font-size:10px; color:#444;">
+            <span>Date : ${dateStr}</span>
+            <span>Time : ${timeStr}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:10px; color:#444; margin-bottom:6px;">
+            <span>${shift}</span>
+            <span>Admin</span>
+        </div>
 
-    logSale(g.toFixed(3), billCount); 
-    window.open(doc.output('bloburl'), '_blank');
-    clearCart(); closeM();
+        <div style="border-top:1px dashed #999; margin:6px 0;"></div>
+
+        <table style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr style="border-bottom:1px dashed #999;">
+                    <th style="text-align:left; font-size:11px; padding:3px 2px;">Item</th>
+                    <th style="text-align:center; font-size:11px; padding:3px 2px;">Qty</th>
+                    <th style="text-align:right; font-size:11px; padding:3px 2px;">Price</th>
+                    <th style="text-align:right; font-size:11px; padding:3px 2px;">Amount</th>
+                </tr>
+            </thead>
+            <tbody style="border-bottom:1px dashed #999;">
+                ${itemsHTML}
+            </tbody>
+        </table>
+
+        <div style="border-top:1px dashed #999; margin:6px 0;"></div>
+
+        <table style="width:100%; border-collapse:collapse;">
+            ${discRow}
+            <tr><td colspan="3" style="font-size:11px; padding:2px;">VAT Amt (5%)</td><td style="text-align:right;font-size:11px;padding:2px;">${vt.toFixed(3)}</td></tr>
+            ${dlvRow}
+        </table>
+
+        <div style="text-align:right; border-top:1px solid #333; margin-top:6px; padding-top:4px;">
+            <span style="font-size:16px; font-weight:900;">GTotal: ${g.toFixed(3)}</span>
+        </div>
+
+        <div style="border-top:1px dashed #999; margin:8px 0;"></div>
+        <div style="font-size:12px; font-weight:700;">Items / Qty :  ${cart.length} / ${totalQty}</div>
+        <div style="border-top:1px dashed #999; margin:8px 0;"></div>
+
+        <div style="text-align:center; font-size:9px; color:#666; margin-top:4px;">
+            Generated by ASH BAKES POS System
+        </div>
+    </div>`;
+
+    // Show receipt preview on screen
+    document.getElementById('receipt-preview-box').innerHTML = receiptHTML;
+    document.getElementById('receipt-preview-modal').style.display = 'flex';
+
+    logSale(g.toFixed(3), billCount);
+    clearCart(); 
+    closeM();
+
+    // Trigger thermal print
+    setTimeout(() => { printThermalReceipt(); }, 300);
+}
+
+function printThermalReceipt() {
+    var receiptContent = document.getElementById('thermal-receipt');
+    if (!receiptContent) return;
+
+    var printWindow = window.open('', '_blank', 'width=400,height=600');
+    var styles = '* { margin:0; padding:0; box-sizing:border-box; }' +
+        'body { font-family: Courier New, Courier, monospace; background:#fff; }' +
+        '@page { size: 80mm auto; margin: 0; }' +
+        '@media print { html, body { width: 80mm; } body { padding: 5px; } }';
+
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>ASH BAKES Receipt</title>' +
+        '<style>' + styles + '</style>' +
+        '</head><body>' + receiptContent.outerHTML + '</body></html>';
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(function() {
+        printWindow.print();
+        printWindow.close();
+    }, 400);
 }
 
 
-    function showPreview() { if(!cart.length) return; let sub = 0, itemsHtml = ''; cart.forEach(i => { sub += i.price * i.qty; itemsHtml += `<div style="display:flex; justify-content:space-between; border-bottom: 1px dotted #eee; padding: 4px 0;"><span>${i.name} x${i.qty}</span><span>${(i.price*i.qty).toFixed(3)}</span></div>`; }); let dp = parseFloat(document.getElementById('disc-val').value) || 0, dlv = parseFloat(document.getElementById('deliv-val').value) || 0; let ad = sub - (sub * (dp / 100)), vt = ad * 0.05, g = ad + vt + dlv; document.getElementById('preview-content').innerHTML = `<b>Items:</b>${itemsHtml}<div style="margin-top:10px"><b>Total: OMR ${g.toFixed(3)}</b></div>`; show('previewM'); }
+    function showPreview() { if(!cart.length) return; executePrint(); }
     function render() { 
         let c = document.getElementById('m'), q = document.getElementById('s').value.toLowerCase(), hb = document.getElementById('hb'); 
         c.innerHTML = ''; 
