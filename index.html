@@ -551,103 +551,102 @@ function updatePayStyle(method) {
     let itemsHTML = '';
     cart.forEach(item => {
         let it = item.price * item.qty;
-        itemsHTML += `
-        <tr>
-            <td style="padding:4px 2px; font-size:12px;">${item.name}</td>
-            <td style="text-align:center; padding:4px 2px; font-size:12px;">${item.qty}</td>
-            <td style="text-align:right; padding:4px 2px; font-size:12px;">${item.price.toFixed(3)}</td>
-            <td style="text-align:right; padding:4px 2px; font-size:12px;">${it.toFixed(3)}</td>
-        </tr>`;
+        itemsHTML += '<tr>' +
+            '<td style="padding:5px 4px;font-size:14px;">' + item.name + '</td>' +
+            '<td style="text-align:center;padding:5px 4px;font-size:14px;">' + item.qty + '</td>' +
+            '<td style="text-align:right;padding:5px 4px;font-size:14px;">' + item.price.toFixed(3) + '</td>' +
+            '<td style="text-align:right;padding:5px 4px;font-size:14px;">' + it.toFixed(3) + '</td>' +
+            '</tr>';
     });
 
     // Logo HTML
     let savedPhoto = localStorage.getItem('savedPhotoUrl');
-    let logoHTML = savedPhoto 
-        ? `<img src="${savedPhoto}" style="width:80px;height:80px;object-fit:cover;border-radius:50%;border:3px solid #00C7C7;">`
-        : `<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#00C7C7,#3b82f6);display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 4px 12px rgba(0,199,199,0.4);"><b style="color:#FFFF00;font-size:18px;font-weight:900;">ASH</b><span style="color:#FFFF00;font-size:7px;font-weight:700;letter-spacing:1px;">BAKES</span></div>`;
+    let logoHTML = savedPhoto
+        ? '<img src="' + savedPhoto + '" style="width:130px;height:130px;object-fit:cover;border-radius:50%;">'
+        : '<div style="width:130px;height:130px;border-radius:50%;background:linear-gradient(135deg,#00C7C7,#3b82f6);display:flex;flex-direction:column;align-items:center;justify-content:center;"><b style="color:#FFFF00;font-size:28px;font-weight:900;">ASH</b><span style="color:#FFFF00;font-size:10px;">BAKES</span></div>';
 
     // Discount row
-    let discRow = discAmt > 0 ? `
-        <tr><td colspan="3" style="font-size:11px; padding:2px;">Discount (${dp}%)</td><td style="text-align:right;font-size:11px;padding:2px;">-${discAmt.toFixed(3)}</td></tr>` : '';
-    
+    let discRow = discAmt > 0
+        ? '<tr><td colspan="3" style="font-size:14px;padding:4px;">Discount (' + dp + '%)</td><td style="text-align:right;font-size:14px;padding:4px;">-' + discAmt.toFixed(3) + '</td></tr>'
+        : '';
+
     // Delivery row
-    let dlvRow = dlv > 0 ? `
-        <tr><td colspan="3" style="font-size:11px; padding:2px;">Delivery Charges</td><td style="text-align:right;font-size:11px;padding:2px;">${dlv.toFixed(3)}</td></tr>` : '';
+    let dlvRow = dlv > 0
+        ? '<tr><td colspan="3" style="font-size:14px;padding:4px;">Delivery Charges</td><td style="text-align:right;font-size:14px;padding:4px;">' + dlv.toFixed(3) + '</td></tr>'
+        : '';
 
-    // Build full receipt HTML for screen preview
-    const receiptHTML = `
-    <div id="thermal-receipt" style="
-        font-family: 'Courier New', Courier, monospace;
-        width: 302px;
-        margin: 0 auto;
-        background: #fff;
-        padding: 16px 10px;
-        box-shadow: 0 4px 30px rgba(0,0,0,0.15);
-        border-radius: 8px;
-        color: #111;
-    ">
-        <div style="text-align:center; margin-bottom:10px;">
-            ${logoHTML}
-        </div>
-        <div style="text-align:center; margin-bottom:8px;">
-            <div style="font-size:13px; font-weight:700;">AL SEEB</div>
-            <div style="font-size:11px; color:#555;">Sultanate of oman</div>
-            <div style="font-size:11px; color:#555;">97060084</div>
-            <div style="font-size:14px; font-weight:900; margin-top:4px;">Take Away Hall</div>
-        </div>
+    // Dashed line helper
+    var dash = '<div style="border-top:2px dashed #aaa;margin:10px 0;"></div>';
 
-        <div style="border-top:1px dashed #999; margin:8px 0;"></div>
+    // Build full receipt HTML - matching Image 1 PDF style exactly
+    var receiptHTML =
+        '<div id="thermal-receipt" style="font-family:Arial,sans-serif;width:100%;max-width:420px;margin:0 auto;background:#fff;padding:24px 20px;color:#111;">' +
 
-        <div style="font-size:12px; font-weight:700; margin-bottom:2px;">Bill no: ${billCount}</div>
-        <div style="display:flex; justify-content:space-between; font-size:10px; color:#444;">
-            <span>Date : ${dateStr}</span>
-            <span>Time : ${timeStr}</span>
-        </div>
-        <div style="display:flex; justify-content:space-between; font-size:10px; color:#444; margin-bottom:6px;">
-            <span>${shift}</span>
-            <span>Admin</span>
-        </div>
+            // Logo
+            '<div style="text-align:center;margin-bottom:14px;">' + logoHTML + '</div>' +
 
-        <div style="border-top:1px dashed #999; margin:6px 0;"></div>
+            // Shop info
+            '<div style="text-align:center;margin-bottom:12px;">' +
+                '<div style="font-size:17px;font-weight:600;">AL SEEB</div>' +
+                '<div style="font-size:14px;color:#444;">Sultanate of oman</div>' +
+                '<div style="font-size:14px;color:#444;">97060084</div>' +
+                '<div style="font-size:18px;font-weight:900;margin-top:6px;">Take Away Hall</div>' +
+            '</div>' +
 
-        <table style="width:100%; border-collapse:collapse;">
-            <thead>
-                <tr style="border-bottom:1px dashed #999;">
-                    <th style="text-align:left; font-size:11px; padding:3px 2px;">Item</th>
-                    <th style="text-align:center; font-size:11px; padding:3px 2px;">Qty</th>
-                    <th style="text-align:right; font-size:11px; padding:3px 2px;">Price</th>
-                    <th style="text-align:right; font-size:11px; padding:3px 2px;">Amount</th>
-                </tr>
-            </thead>
-            <tbody style="border-bottom:1px dashed #999;">
-                ${itemsHTML}
-            </tbody>
-        </table>
+            dash +
 
-        <div style="border-top:1px dashed #999; margin:6px 0;"></div>
+            // Bill info
+            '<div style="font-size:16px;font-weight:700;margin-bottom:4px;">Bill no : ' + billCount + '</div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:2px;">' +
+                '<span>Date : ' + dateStr + '</span>' +
+                '<span>Time : ' + timeStr + '</span>' +
+            '</div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px;">' +
+                '<span>' + shift + '</span><span>Admin</span>' +
+            '</div>' +
 
-        <table style="width:100%; border-collapse:collapse;">
-            ${discRow}
-            <tr><td colspan="3" style="font-size:11px; padding:2px;">VAT Amt (5%)</td><td style="text-align:right;font-size:11px;padding:2px;">${vt.toFixed(3)}</td></tr>
-            ${dlvRow}
-        </table>
+            dash +
 
-        <div style="text-align:right; border-top:1px solid #333; margin-top:6px; padding-top:4px;">
-            <span style="font-size:16px; font-weight:900;">GTotal: ${g.toFixed(3)}</span>
-        </div>
+            // Table header
+            '<table style="width:100%;border-collapse:collapse;">' +
+                '<thead>' +
+                    '<tr>' +
+                        '<th style="text-align:left;font-size:15px;font-weight:700;padding:5px 4px;border-bottom:2px dashed #aaa;">Item</th>' +
+                        '<th style="text-align:center;font-size:15px;font-weight:700;padding:5px 4px;border-bottom:2px dashed #aaa;">Qty</th>' +
+                        '<th style="text-align:right;font-size:15px;font-weight:700;padding:5px 4px;border-bottom:2px dashed #aaa;">Price</th>' +
+                        '<th style="text-align:right;font-size:15px;font-weight:700;padding:5px 4px;border-bottom:2px dashed #aaa;">Amount</th>' +
+                    '</tr>' +
+                '</thead>' +
+                '<tbody>' + itemsHTML + '</tbody>' +
+            '</table>' +
 
-        <div style="border-top:1px dashed #999; margin:8px 0;"></div>
-        <div style="font-size:12px; font-weight:700;">Items / Qty :  ${cart.length} / ${totalQty}</div>
-        <div style="border-top:1px dashed #999; margin:8px 0;"></div>
+            dash +
 
-        <div style="text-align:center; font-size:9px; color:#666; margin-top:4px;">
-            Generated by ASH BAKES POS System
-        </div>
-    </div>`;
+            // VAT / Discount / Delivery
+            '<table style="width:100%;border-collapse:collapse;">' +
+                discRow +
+                '<tr><td colspan="3" style="font-size:14px;padding:4px;">VAT Amt (5%)</td><td style="text-align:right;font-size:14px;padding:4px;">' + vt.toFixed(3) + '</td></tr>' +
+                dlvRow +
+            '</table>' +
+
+            // Grand Total
+            '<div style="text-align:right;border-top:2px solid #333;margin-top:8px;padding-top:6px;">' +
+                '<span style="font-size:22px;font-weight:900;">GTotal:&nbsp;&nbsp;' + g.toFixed(3) + '</span>' +
+            '</div>' +
+
+            dash +
+
+            '<div style="font-size:16px;font-weight:700;">Items / Qty :&nbsp;&nbsp;' + cart.length + ' / ' + totalQty + '</div>' +
+
+            dash +
+
+            '<div style="text-align:center;font-size:12px;color:#666;margin-top:6px;">Generated by ASH BAKES POS System</div>' +
+        '</div>';
 
     // Show receipt preview on screen
     document.getElementById('receipt-preview-box').innerHTML = receiptHTML;
     document.getElementById('receipt-preview-modal').style.display = 'flex';
+
 
     logSale(g.toFixed(3), billCount);
     clearCart(); 
