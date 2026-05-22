@@ -593,21 +593,9 @@ function updatePayStyle(method) {
     logSale(g.toFixed(3), billCount);
     clearCart(); closeM();
 
-    const pdfDataUri = doc.output('datauristring');
-    const printWin = window.open('', '_blank');
-    if (!printWin) { alert('Popup blocked! Allow popups for this site.'); return; }
-    printWin.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:0;}
-#btn{margin:14px auto;padding:15px 0;background:#00C7C7;color:#fff;font-size:17px;font-weight:900;border:none;border-radius:14px;cursor:pointer;width:90%;max-width:320px;letter-spacing:1px;box-shadow:0 6px 24px rgba(0,199,199,0.4);}
-iframe{width:100%;max-width:420px;height:85vh;border:none;}
-@media print{#btn{display:none;}iframe{height:100vh;}}
-</style></head><body>
-<button id="btn" onclick="window.print()">🖨️ PRINT RECEIPT</button>
-<iframe src="${pdfDataUri}"></iframe>
-</body></html>`);
-    printWin.document.close();
+    const pdfBlob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    window.open(blobUrl, '_blank');
 }
 
 
