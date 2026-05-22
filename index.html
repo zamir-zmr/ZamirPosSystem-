@@ -593,25 +593,30 @@ function updatePayStyle(method) {
     logSale(g.toFixed(3), billCount);
     clearCart(); closeM();
 
-    // Save PDF + show print overlay on same page
     const pdfBlob = doc.output('blob');
     const pdfUrl = URL.createObjectURL(pdfBlob);
-
-    // Remove old overlay
     const oldOv = document.getElementById('_printOv');
     if (oldOv) oldOv.remove();
-
     const ov = document.createElement('div');
     ov.id = '_printOv';
     ov.style.cssText = 'position:fixed;inset:0;z-index:999999;background:#111;display:flex;flex-direction:column;';
-    ov.innerHTML =
-      '<div style="display:flex;flex-shrink:0;">' +
-        '<button style="flex:1;padding:22px;background:#00C7C7;color:#fff;font-size:19px;font-weight:900;border:none;cursor:pointer;" ' +
-          'onclick="(function(){var a=document.createElement('a');a.href='' + pdfUrl + '';a.download='receipt.pdf';a.click();})()">&#128424; DOWNLOAD &amp; PRINT</button>' +
-        '<button style="padding:22px 26px;background:#333;color:#fff;font-size:20px;border:none;cursor:pointer;" ' +
-          'onclick="document.getElementById('_printOv').remove()">&#10005;</button>' +
-      '</div>' +
-      '<iframe src="' + pdfUrl + '#toolbar=0" style="flex:1;border:none;width:100%;background:#fff;"></iframe>';
+    const topBar = document.createElement('div');
+    topBar.style.cssText = 'display:flex;flex-shrink:0;';
+    const dlBtn = document.createElement('button');
+    dlBtn.style.cssText = 'flex:1;padding:22px;background:#00C7C7;color:#fff;font-size:19px;font-weight:900;border:none;cursor:pointer;';
+    dlBtn.innerHTML = '&#128424; DOWNLOAD & PRINT';
+    dlBtn.onclick = function(){ var a=document.createElement('a'); a.href=pdfUrl; a.download='receipt.pdf'; a.click(); };
+    const clBtn = document.createElement('button');
+    clBtn.style.cssText = 'padding:22px 26px;background:#333;color:#fff;font-size:20px;border:none;cursor:pointer;';
+    clBtn.innerHTML = '&#10005;';
+    clBtn.onclick = function(){ document.getElementById('_printOv').remove(); };
+    topBar.appendChild(dlBtn);
+    topBar.appendChild(clBtn);
+    const fr = document.createElement('iframe');
+    fr.src = pdfUrl;
+    fr.style.cssText = 'flex:1;border:none;width:100%;background:#fff;';
+    ov.appendChild(topBar);
+    ov.appendChild(fr);
     document.body.appendChild(ov);
 }
 
