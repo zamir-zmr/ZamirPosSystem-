@@ -1239,18 +1239,22 @@ function editQtyManual(idx, val) {
 }
 
 // ===== RECALCULATE TOTALS =====
+
 function recalcEditTotals() {
     let sub = editCartItems.reduce((a, b) => a + parseFloat(b.price) * parseFloat(b.qty), 0);
     let dp = parseFloat(document.getElementById('editDiscount').value) || 0;
     let dlv = parseFloat(document.getElementById('editDelivery').value) || 0;
-    let afterDisc = sub - (sub * dp / 100);
-    let vat = afterDisc * 0.05;
-    let grand = afterDisc + vat + dlv;
+    
+    // Calculations as per screenshot sequence
+    let discountAmount = sub * (dp / 100);
+    let vat = sub * 0.05; 
+    let grand = sub - discountAmount + vat + dlv;
 
     document.getElementById('editSubTotal').innerText = sub.toFixed(3);
     document.getElementById('editVat').innerText = vat.toFixed(3);
     document.getElementById('editGrandTotal').innerHTML = `${grand.toFixed(3)} <small style="font-size:12px;">OMR</small>`;
 }
+
 
 // ===== PAYMENT METHOD SELECT =====
 function setEditMethod(method) {
