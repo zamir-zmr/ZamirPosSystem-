@@ -559,7 +559,7 @@ function updatePayStyle(method) {
     let dp = parseFloat(document.getElementById('disc-val').value) || 0,
         dlv = parseFloat(document.getElementById('deliv-val').value) || 0;
     let discAmt = sub * (dp / 100);
-    let ad = sub - discAmt, vt = ad * 0.05, g = ad + vt + dlv;
+    let ad = sub - discAmt, vt = sub * 0.05, g = ad + vt + dlv;
 
     y += 2; doc.line(LEFT, y, RIGHT, y); y += 5;
     doc.setFontSize(9);
@@ -621,7 +621,7 @@ function updatePayStyle(method) {
 }
 
 
-    function showPreview() { if(!cart.length) return; let sub = 0, itemsHtml = ''; cart.forEach(i => { sub += i.price * i.qty; itemsHtml += `<div style="display:flex; justify-content:space-between; border-bottom: 1px dotted #eee; padding: 4px 0;"><span>${i.name} x${i.qty}</span><span>${(i.price*i.qty).toFixed(3)}</span></div>`; }); let dp = parseFloat(document.getElementById('disc-val').value) || 0, dlv = parseFloat(document.getElementById('deliv-val').value) || 0; let ad = sub - (sub * (dp / 100)), vt = ad * 0.05, g = ad + vt + dlv; document.getElementById('preview-content').innerHTML = `<b>Items:</b>${itemsHtml}<div style="margin-top:10px"><b>Total: OMR ${g.toFixed(3)}</b></div>`; show('previewM'); }
+    function showPreview() { if(!cart.length) return; let sub = 0, itemsHtml = ''; cart.forEach(i => { sub += i.price * i.qty; itemsHtml += `<div style="display:flex; justify-content:space-between; border-bottom: 1px dotted #eee; padding: 4px 0;"><span>${i.name} x${i.qty}</span><span>${(i.price*i.qty).toFixed(3)}</span></div>`; }); let dp = parseFloat(document.getElementById('disc-val').value) || 0, dlv = parseFloat(document.getElementById('deliv-val').value) || 0; let ad = sub - (sub * (dp / 100)), vt = sub * 0.05, g = ad + vt + dlv; document.getElementById('preview-content').innerHTML = `<b>Items:</b>${itemsHtml}<div style="margin-top:10px"><b>Total: OMR ${g.toFixed(3)}</b></div>`; show('previewM'); }
     function render() { 
         let c = document.getElementById('m'), q = document.getElementById('s').value.toLowerCase(), hb = document.getElementById('hb'); 
         c.innerHTML = ''; 
@@ -799,7 +799,7 @@ function updateCartUI(rebuildList = true) {
     let dlv = parseFloat(document.getElementById('deliv-val').value) || 0;
     
     let ad = sub - (sub * (dp / 100));
-    let vt = ad * 0.05;
+    let vt = sub * 0.05;
     let g = ad + vt + dlv;
 
     // UI Updates
@@ -1247,8 +1247,9 @@ function recalcEditTotals() {
     let dlv = parseFloat(document.getElementById('editDelivery').value) || 0;
     
     let discountAmount = sub * (dp / 100);
-    let vat = sub * 0.05; // VAT calculated on original subtotal (1.800)
-    let grand = sub - discountAmount + vat + dlv; // 36.000 - 5.400 + 1.800 = 32.400
+    let afterDisc = sub - discountAmount;
+    let vat = sub * 0.05; // VAT calculated on subtotal
+    let grand = afterDisc + vat + dlv;
 
     document.getElementById('editSubTotal').innerText = sub.toFixed(3);
     document.getElementById('editVat').innerText = vat.toFixed(3); // Yeh screen par 1.800 dikhayega
@@ -1289,8 +1290,8 @@ function saveEditedBill() {
     // Grand total recalculate
     let sub = editCartItems.reduce((a, b) => a + parseFloat(b.price) * parseFloat(b.qty), 0);
     let afterDisc = sub - (sub * discount / 100);
-    let vat = afterDisc * 0.05;
-    let grand = sub - discountAmount + vat + dlv; // 36.000 - 5.400 + 1.800 = 32.400
+    let vat = sub * 0.05;
+    let grand = afterDisc + vat + delivery;
 
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
     let idx = sales.findIndex(s => String(s.billNo) === String(billNo));
