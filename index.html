@@ -1290,7 +1290,7 @@ function saveEditedBill() {
     let sub = editCartItems.reduce((a, b) => a + parseFloat(b.price) * parseFloat(b.qty), 0);
     let afterDisc = sub - (sub * discount / 100);
     let vat = afterDisc * 0.05;
-    let grand = afterDisc + vat + delivery;
+    let grand = sub - discountAmount + vat + dlv; // 36.000 - 5.400 + 1.800 = 32.400
 
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
     let idx = sales.findIndex(s => String(s.billNo) === String(billNo));
