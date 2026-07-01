@@ -502,41 +502,49 @@ function updatePayStyle(method) {
 
     async function executePrint() {
     const { jsPDF } = window.jspdf;
-    const itemRowH = 6;
-    const headH = 95;
+    const itemRowH = 6; 
+    const headH = 95; 
     const footH = 65;
-    const dynH = headH + (cart.length * itemRowH) + footH + 20;
+    const dynH = headH + (cart.length * itemRowH) + footH + 20; 
     const doc = new jsPDF({ unit: 'mm', format: [80, dynH] });
     const LEFT = 5, CENTER = 40, RIGHT = 75; let y = 10;
-
-    const now = new Date();
-    const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    
+    const now = new Date(); 
+    const dateStr = now.toLocaleDateString('en-GB'); 
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); 
     const shift = getShift(now.getHours());
-
-    const todayLocal = dateStr;
+    
+    const todayLocal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const lastSavedDate = localStorage.getItem('asb_last_date') || '';
     let billCount;
-    if (lastSavedDate !== todayLocal) { billCount = 1; }
-    else { billCount = (parseInt(localStorage.getItem('asb_bill_count')) || 0) + 1; }
+    if (lastSavedDate !== todayLocal) {
+        billCount = 1;
+    } else {
+        billCount = (parseInt(localStorage.getItem('asb_bill_count')) || 0) + 1;
+    }
     localStorage.setItem('asb_last_date', todayLocal);
     localStorage.setItem('asb_bill_count', billCount);
 
+    // Logo
     let savedPhoto = localStorage.getItem('savedPhotoUrl');
     if (savedPhoto) { try { doc.addImage(savedPhoto, 'PNG', 20, y, 40, 40); y += 45; } catch (e) { y += 5; } }
 
+    // Header Info
     doc.setFontSize(10); doc.text("AL SEEB", CENTER, y, {align:'center'}); y += 4;
     doc.setFontSize(8); doc.text("Sultanate of oman", CENTER, y, {align:'center'}); y += 4;
     doc.text("97060084", CENTER, y, {align:'center'}); y += 6;
     doc.setFontSize(12); doc.setFont("helvetica", "bold");
     doc.text("Take Away Hall", CENTER, y, {align:'center'}); y += 8;
 
-    doc.setFontSize(10); doc.text("Bill no : " + billCount, LEFT, y); y += 5;
+    // Bill Details
+    doc.setFontSize(10); doc.text( "Bill no: " + billCount, LEFT, y); y += 5;
     doc.setFontSize(8); doc.setFont("helvetica", "normal");
     doc.text("Date : " + dateStr, LEFT, y); doc.text("Time : " + timeStr, RIGHT, y, {align: 'right'}); y += 4;
     doc.text(shift + "", LEFT, y); doc.text("Admin", RIGHT, y, {align: 'right'}); y += 5;
 
-    doc.setLineWidth(0.3); doc.setLineDashPattern([1, 1], 0);
+    // --- Professional Table Header ---
+    doc.setLineWidth(0.3);
+    doc.setLineDashPattern([1, 1], 0);
     doc.line(LEFT, y, RIGHT, y); y += 4;
     doc.setFont("helvetica", "bold");
     doc.text("Item", LEFT, y);
@@ -545,23 +553,27 @@ function updatePayStyle(method) {
     doc.text("Amount", RIGHT, y, {align: 'right'});
     y += 2; doc.line(LEFT, y, RIGHT, y); y += 6;
 
+    // Items Loop
     let sub = 0; let totalQty = 0;
     doc.setFont("helvetica", "normal");
-    cart.forEach(item => {
+    cart.forEach(item => { 
         let it = item.price * item.qty; sub += it; totalQty += item.qty;
-        doc.text(item.name, LEFT, y);
-        doc.text(item.qty.toString(), CENTER + 5, y, {align: 'right'});
+        doc.text(item.name, LEFT, y); 
+        doc.text(item.qty.toString(), CENTER + 5, y, {align: 'right'}); 
         doc.text(item.price.toFixed(3), CENTER + 18, y, {align: 'right'});
-        doc.text(it.toFixed(3), RIGHT, y, {align: 'right'});
-        y += itemRowH;
+        doc.text(it.toFixed(3), RIGHT, y, {align: 'right'}); 
+        y += itemRowH; 
     });
 
-    let dp = parseFloat(document.getElementById('disc-val').value) || 0,
-        dlv = parseFloat(document.getElementById('deliv-val').value) || 0;
+    // Calculations logic
+    let dp = parseFloat(document.getElementById('disc-val').value) || 0, 
+        dlv = parseFloat(document.getElementById('deliv-val').value) || 0; 
     let discAmt = sub * (dp / 100);
     let ad = sub - discAmt, vt = sub * 0.05, g = ad + vt + dlv;
 
     y += 2; doc.line(LEFT, y, RIGHT, y); y += 5;
+    
+    // Summary Rows
     doc.setFontSize(9);
     if (discAmt > 0) {
         doc.text("Discount (" + dp + "%)", LEFT, y);
@@ -570,18 +582,21 @@ function updatePayStyle(method) {
     }
     doc.text("VAT Amt (5%)", LEFT, y);
     doc.text(vt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
+
     if (dlv > 0) {
         doc.text("Delivery Charges", LEFT, y);
         doc.text(dlv.toFixed(3), RIGHT, y, {align: 'right'});
         y += 5;
     }
 
-    doc.setLineDashPattern([], 0);
+    // Grand Total (Highlighted)
+    doc.setLineDashPattern([], 0); // Solid line for total
     doc.line(RIGHT - 30, y, RIGHT, y); y += 6;
     doc.setFontSize(14); doc.setFont("helvetica", "bold");
-    doc.text("GTotal:", CENTER, y);
+    doc.text("GTotal:", CENTER, y); 
     doc.text(g.toFixed(3), RIGHT, y, {align: 'right'}); y += 8;
-
+    
+    // Items Count Summary
     doc.setFontSize(10); doc.setLineDashPattern([1, 1], 0);
     doc.line(LEFT, y, RIGHT, y); y += 5;
     doc.text("Items / Qty :    " + cart.length + " / " + totalQty, LEFT, y);
@@ -590,34 +605,22 @@ function updatePayStyle(method) {
     doc.setFontSize(7); doc.setFont("helvetica", "normal");
     doc.text("Generated by ASH BAKES POS System", CENTER, y, {align: 'center'});
 
-    logSale(g.toFixed(3), billCount);
+    logSale(g.toFixed(3), billCount); 
+    printThermal(doc);
     clearCart(); closeM();
+}
 
-    const pdfBlob = doc.output('blob');
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    const oldOv = document.getElementById('_printOv');
-    if (oldOv) oldOv.remove();
-    const ov = document.createElement('div');
-    ov.id = '_printOv';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:999999;background:#111;display:flex;flex-direction:column;';
-    const topBar = document.createElement('div');
-    topBar.style.cssText = 'display:flex;flex-shrink:0;';
-    const dlBtn = document.createElement('button');
-    dlBtn.style.cssText = 'flex:1;padding:22px;background:#00C7C7;color:#fff;font-size:19px;font-weight:900;border:none;cursor:pointer;';
-    dlBtn.innerHTML = '&#128424; DOWNLOAD & PRINT';
-    dlBtn.onclick = function(){ var a=document.createElement('a'); a.href=pdfUrl; a.download='receipt.pdf'; a.click(); };
-    const clBtn = document.createElement('button');
-    clBtn.style.cssText = 'padding:22px 26px;background:#333;color:#fff;font-size:20px;border:none;cursor:pointer;';
-    clBtn.innerHTML = '&#10005;';
-    clBtn.onclick = function(){ document.getElementById('_printOv').remove(); };
-    topBar.appendChild(dlBtn);
-    topBar.appendChild(clBtn);
-    const fr = document.createElement('iframe');
-    fr.src = pdfUrl;
-    fr.style.cssText = 'flex:1;border:none;width:100%;background:#fff;';
-    ov.appendChild(topBar);
-    ov.appendChild(fr);
-    document.body.appendChild(ov);
+function printThermal(doc) {
+    const blobUrl = doc.output('bloburl');
+    const printWin = window.open(blobUrl, '_blank');
+    if (printWin) {
+        printWin.addEventListener('load', function() {
+            setTimeout(function() {
+                printWin.focus();
+                printWin.print();
+            }, 800);
+        });
+    }
 }
 
 
@@ -1239,23 +1242,18 @@ function editQtyManual(idx, val) {
 }
 
 // ===== RECALCULATE TOTALS =====
-
-
 function recalcEditTotals() {
     let sub = editCartItems.reduce((a, b) => a + parseFloat(b.price) * parseFloat(b.qty), 0);
     let dp = parseFloat(document.getElementById('editDiscount').value) || 0;
     let dlv = parseFloat(document.getElementById('editDelivery').value) || 0;
-    
-    let discountAmount = sub * (dp / 100);
-    let afterDisc = sub - discountAmount;
-    let vat = sub * 0.05; // VAT calculated on subtotal
+    let afterDisc = sub - (sub * dp / 100);
+    let vat = sub * 0.05;
     let grand = afterDisc + vat + dlv;
 
     document.getElementById('editSubTotal').innerText = sub.toFixed(3);
-    document.getElementById('editVat').innerText = vat.toFixed(3); // Yeh screen par 1.800 dikhayega
+    document.getElementById('editVat').innerText = vat.toFixed(3);
     document.getElementById('editGrandTotal').innerHTML = `${grand.toFixed(3)} <small style="font-size:12px;">OMR</small>`;
 }
-
 
 // ===== PAYMENT METHOD SELECT =====
 function setEditMethod(method) {
@@ -1862,6 +1860,7 @@ function deleteBill(billNo, dateKey, displayLabel){
   <button id="delOkBtn" style="width:100%;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;padding:17px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;box-shadow:0 8px 24px rgba(29,68,68,0.35);">🗑️ Delete</button>
   <button onclick="closeDelModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:15px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;">↩️ CANCEL</button>
 </div>
+
 
 
 </body>
