@@ -7,6 +7,30 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
+        #thermal-print-area { display: none; }
+        @media print {
+            @page { size: 80mm auto; margin: 0; }
+            body * { visibility: hidden; }
+            #thermal-print-area, #thermal-print-area * { visibility: visible; }
+            #thermal-print-area {
+                display: block !important;
+                position: absolute; left: 0; top: 0;
+                width: 80mm; padding: 2mm 3mm;
+                font-family: 'Courier New', monospace; color: #000;
+            }
+            #thermal-print-area img.tp-logo { display: block; margin: 0 auto 6px; max-width: 35mm; max-height: 35mm; object-fit: contain; }
+            #thermal-print-area .tp-center { text-align: center; }
+            #thermal-print-area .tp-bold { font-weight: 700; }
+            #thermal-print-area .tp-line { border-top: 1px dashed #000; margin: 4px 0; }
+            #thermal-print-area .tp-row { display: flex; justify-content: space-between; font-size: 12px; }
+            #thermal-print-area table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            #thermal-print-area table th, #thermal-print-area table td { padding: 1px 0; text-align: right; }
+            #thermal-print-area table th:first-child, #thermal-print-area table td:first-child { text-align: left; }
+            #thermal-print-area .tp-total { font-size: 16px; font-weight: 800; }
+            #thermal-print-area .tp-footer { font-size: 10px; text-align: center; margin-top: 6px; }
+        }
+    </style>
+    <style>
         :root { --primary: #00C7C7; --secondary: #3b82f6; --a: #10b981; --d: #ef4444; --s: #f8fafc; --w: #f59e0b; --slate: #64748b; }
         * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
         input, textarea { -webkit-user-select: text; user-select: text; }
@@ -161,6 +185,7 @@
     </style>
 </head>
 <body onload="initApp()">
+<div id="thermal-print-area"></div>
     <div class="h">
         <div style="display:flex;justify-content:space-between;align-items:center">
             <div class="logo-box">
@@ -501,14 +526,6 @@ function updatePayStyle(method) {
     function loadSavedLogo() { let savedPhoto = localStorage.getItem('savedPhotoUrl'); if (savedPhoto) displayLogo(savedPhoto); }
 
     async function executePrint() {
-    const { jsPDF } = window.jspdf;
-    const itemRowH = 6; 
-    const headH = 95; 
-    const footH = 65;
-    const dynH = headH + (cart.length * itemRowH) + footH + 20; 
-    const doc = new jsPDF({ unit: 'mm', format: [80, dynH] });
-    const LEFT = 5, CENTER = 40, RIGHT = 75; let y = 10;
-    
     const now = new Date(); 
     const dateStr = now.toLocaleDateString('en-GB'); 
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); 
@@ -525,102 +542,65 @@ function updatePayStyle(method) {
     localStorage.setItem('asb_last_date', todayLocal);
     localStorage.setItem('asb_bill_count', billCount);
 
-    // Logo
-    let savedPhoto = localStorage.getItem('savedPhotoUrl');
-    if (savedPhoto) { try { doc.addImage(savedPhoto, 'PNG', 20, y, 40, 40); y += 45; } catch (e) { y += 5; } }
-
-    // Header Info
-    doc.setFontSize(10); doc.text("AL SEEB", CENTER, y, {align:'center'}); y += 4;
-    doc.setFontSize(8); doc.text("Sultanate of oman", CENTER, y, {align:'center'}); y += 4;
-    doc.text("97060084", CENTER, y, {align:'center'}); y += 6;
-    doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text("Take Away Hall", CENTER, y, {align:'center'}); y += 8;
-
-    // Bill Details
-    doc.setFontSize(10); doc.text( "Bill no: " + billCount, LEFT, y); y += 5;
-    doc.setFontSize(8); doc.setFont("helvetica", "normal");
-    doc.text("Date : " + dateStr, LEFT, y); doc.text("Time : " + timeStr, RIGHT, y, {align: 'right'}); y += 4;
-    doc.text(shift + "", LEFT, y); doc.text("Admin", RIGHT, y, {align: 'right'}); y += 5;
-
-    // --- Professional Table Header ---
-    doc.setLineWidth(0.3);
-    doc.setLineDashPattern([1, 1], 0);
-    doc.line(LEFT, y, RIGHT, y); y += 4;
-    doc.setFont("helvetica", "bold");
-    doc.text("Item", LEFT, y);
-    doc.text("Qty", CENTER + 5, y, {align: 'right'});
-    doc.text("Price", CENTER + 18, y, {align: 'right'});
-    doc.text("Amount", RIGHT, y, {align: 'right'});
-    y += 2; doc.line(LEFT, y, RIGHT, y); y += 6;
-
-    // Items Loop
-    let sub = 0; let totalQty = 0;
-    doc.setFont("helvetica", "normal");
-    cart.forEach(item => { 
+    let sub = 0, totalQty = 0, itemsHtml = '';
+    cart.forEach(item => {
         let it = item.price * item.qty; sub += it; totalQty += item.qty;
-        doc.text(item.name, LEFT, y); 
-        doc.text(item.qty.toString(), CENTER + 5, y, {align: 'right'}); 
-        doc.text(item.price.toFixed(3), CENTER + 18, y, {align: 'right'});
-        doc.text(it.toFixed(3), RIGHT, y, {align: 'right'}); 
-        y += itemRowH; 
+        itemsHtml += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.price.toFixed(3)}</td><td>${it.toFixed(3)}</td></tr>`;
     });
 
-    // Calculations logic
     let dp = parseFloat(document.getElementById('disc-val').value) || 0, 
         dlv = parseFloat(document.getElementById('deliv-val').value) || 0; 
     let discAmt = sub * (dp / 100);
     let ad = sub - discAmt, vt = sub * 0.05, g = ad + vt + dlv;
 
-    y += 2; doc.line(LEFT, y, RIGHT, y); y += 5;
-    
-    // Summary Rows
-    doc.setFontSize(9);
-    if (discAmt > 0) {
-        doc.text("Discount (" + dp + "%)", LEFT, y);
-        doc.text("-" + discAmt.toFixed(3), RIGHT, y, {align: 'right'});
-        y += 5;
-    }
-    doc.text("VAT Amt (5%)", LEFT, y);
-    doc.text(vt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
-
-    if (dlv > 0) {
-        doc.text("Delivery Charges", LEFT, y);
-        doc.text(dlv.toFixed(3), RIGHT, y, {align: 'right'});
-        y += 5;
-    }
-
-    // Grand Total (Highlighted)
-    doc.setLineDashPattern([], 0); // Solid line for total
-    doc.line(RIGHT - 30, y, RIGHT, y); y += 6;
-    doc.setFontSize(14); doc.setFont("helvetica", "bold");
-    doc.text("GTotal:", CENTER, y); 
-    doc.text(g.toFixed(3), RIGHT, y, {align: 'right'}); y += 8;
-    
-    // Items Count Summary
-    doc.setFontSize(10); doc.setLineDashPattern([1, 1], 0);
-    doc.line(LEFT, y, RIGHT, y); y += 5;
-    doc.text("Items / Qty :    " + cart.length + " / " + totalQty, LEFT, y);
-    y += 5; doc.line(LEFT, y, RIGHT, y); y += 7;
-
-    doc.setFontSize(7); doc.setFont("helvetica", "normal");
-    doc.text("Generated by ASH BAKES POS System", CENTER, y, {align: 'center'});
+    const html = buildThermalReceiptHtml({
+        billNo: billCount, dateStr, timeStr, shift,
+        itemsHtml, discAmt, dp, vt, dlv, grandTotal: g,
+        itemCount: cart.length, totalQty
+    });
 
     logSale(g.toFixed(3), billCount); 
-    printThermal(doc);
+    printThermal(html);
     clearCart(); closeM();
 }
 
-function printThermal(doc) {
-    const blobUrl = doc.output('bloburl');
-    const printWin = window.open(blobUrl, '_blank');
-    if (printWin) {
-        printWin.addEventListener('load', function() {
-            setTimeout(function() {
-                printWin.focus();
-                printWin.print();
-            }, 800);
-        });
-    }
+function buildThermalReceiptHtml(d) {
+    let savedPhoto = localStorage.getItem('savedPhotoUrl');
+    let logoHtml = savedPhoto ? `<img class="tp-logo" src="${savedPhoto}">` : '';
+    let rows = `<tr><td class="tp-bold">Item</td><td class="tp-bold">Qty</td><td class="tp-bold">Price</td><td class="tp-bold">Amt</td></tr>${d.itemsHtml}`;
+    let discRow = d.discAmt > 0 ? `<div class="tp-row"><span>Discount (${d.dp}%)</span><span>-${d.discAmt.toFixed(3)}</span></div>` : '';
+    let dlvRow = d.dlv > 0 ? `<div class="tp-row"><span>Delivery Charges</span><span>${d.dlv.toFixed(3)}</span></div>` : '';
+    return `
+        ${logoHtml}
+        <div class="tp-center tp-bold" style="font-size:13px">AL SEEB</div>
+        <div class="tp-center" style="font-size:11px">Sultanate of oman</div>
+        <div class="tp-center" style="font-size:11px">97060084</div>
+        <div class="tp-center tp-bold" style="font-size:14px;margin-top:4px">Take Away Hall</div>
+        <div class="tp-line"></div>
+        <div class="tp-row tp-bold"><span>Bill no: ${d.billNo}</span></div>
+        <div class="tp-row"><span>Date : ${d.dateStr}</span><span>Time : ${d.timeStr}</span></div>
+        <div class="tp-row"><span>${d.shift}</span><span>Admin</span></div>
+        <div class="tp-line"></div>
+        <table>${rows}</table>
+        <div class="tp-line"></div>
+        ${discRow}
+        <div class="tp-row"><span>VAT Amt (5%)</span><span>${d.vt.toFixed(3)}</span></div>
+        ${dlvRow}
+        <div class="tp-line" style="border-top:1px solid #000"></div>
+        <div class="tp-row tp-total"><span>GTotal:</span><span>${d.grandTotal.toFixed(3)}</span></div>
+        <div class="tp-line"></div>
+        <div class="tp-row"><span>Items / Qty :</span><span>${d.itemCount} / ${d.totalQty}</span></div>
+        <div class="tp-line"></div>
+        <div class="tp-footer">Generated by ASH BAKES POS System</div>
+    `;
+}
+
+function printThermal(html) {
+    const area = document.getElementById('thermal-print-area');
+    area.innerHTML = html;
+    setTimeout(function() {
+        window.print();
+    }, 150);
 }
 
 
@@ -1320,112 +1300,37 @@ function reprintBill(billNo) {
     let b = sales.find(s => String(s.billNo) === String(billNo));
 
     if (!b) return alert("Error: Bill data not found!");
-    
-    const { jsPDF } = window.jspdf;
-    const itemRowH = 6; 
-    const headH = 95; 
-    const footH = 85; 
-    const dynH = headH + (b.items.length * itemRowH) + footH + 20; 
-    
-    const doc = new jsPDF({ unit: 'mm', format: [80, dynH] });
-    const LEFT = 5, CENTER = 40, RIGHT = 75; 
-    let y = 10;
 
-    // 1. Logo
-    let savedPhoto = localStorage.getItem('savedPhotoUrl');
-    if (savedPhoto) { try { doc.addImage(savedPhoto, 'PNG', 20, y, 40, 40); y += 45; } catch (e) { y += 5; } }
-
-    // 2. Header
-    doc.setFontSize(10); doc.text("AL SEEB", CENTER, y, {align:'center'}); y += 4;
-    doc.setFontSize(8); doc.text("Sultanate of oman", CENTER, y, {align:'center'}); y += 4;
-    doc.text("97060084", CENTER, y, {align:'center'}); y += 6;
-    doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text("Take Away Hall", CENTER, y, {align:'center'}); y += 8;
-
-    // 3. Bill Details & Shift
-    doc.setFontSize(10); doc.text("Bill no : " + b.billNo, LEFT, y); y += 5;
-    doc.setFontSize(8); doc.setFont("helvetica", "normal");
-    doc.text("Date : " + b.date, LEFT, y); 
-    doc.text("Time : " + b.time, RIGHT, y, {align: 'right'}); y += 4;
-    
-    // --- SHIFT DETECTION FIX (AM/PM LOGIC) ---
     let timeParts = b.time.split(' '); 
     let hhmmss = timeParts[0].split(':');
     let h = parseInt(hhmmss[0]);
     let ampm = timeParts[1] ? timeParts[1].toUpperCase() : "";
-
     if (ampm === "PM" && h < 12) h += 12;
     if (ampm === "AM" && h === 12) h = 0;
+    let currentShift = getShift(h);
 
-    let currentShift = getShift(h); 
-    doc.text(currentShift + "", LEFT, y); 
-    doc.text("Admin", RIGHT, y, {align: 'right'}); y += 5;
-    // ------------------------------------------
-
-    // 4. Table Header
-    doc.setLineWidth(0.3); doc.setLineDashPattern([1, 1], 0);
-    doc.line(LEFT, y, RIGHT, y); y += 4;
-    doc.setFont("helvetica", "bold");
-    doc.text("Item", LEFT, y);
-    doc.text("Qty", CENTER + 5, y, {align: 'right'});
-    doc.text("Price", CENTER + 18, y, {align: 'right'});
-    doc.text("Amount", RIGHT, y, {align: 'right'});
-    y += 2; doc.line(LEFT, y, RIGHT, y); y += 6;
-
-    // 5. Items Loop & Sub-Total
-    let subTotal = 0; let totalQty = 0;
-    doc.setFont("helvetica", "normal");
-    b.items.forEach(item => { 
+    let subTotal = 0, totalQty = 0, itemsHtml = '';
+    b.items.forEach(item => {
         let q = parseFloat(item.qty) || 0;
         let p = parseFloat(item.price) || 0;
-        let itTotal = q * p; 
+        let itTotal = q * p;
         subTotal += itTotal; totalQty += q;
-        doc.text(item.name, LEFT, y); 
-        doc.text(q.toString(), CENTER + 5, y, {align: 'right'}); 
-        doc.text(p.toFixed(3), CENTER + 18, y, {align: 'right'});
-        doc.text(itTotal.toFixed(3), RIGHT, y, {align: 'right'}); 
-        y += itemRowH; 
+        itemsHtml += `<tr><td>${item.name}</td><td>${q}</td><td>${p.toFixed(3)}</td><td>${itTotal.toFixed(3)}</td></tr>`;
     });
 
-    y += 2; doc.line(LEFT, y, RIGHT, y); y += 5;
-    
-    // 6. CALCULATIONS (DESIGN MATCH)
     let dP = parseFloat(b.discountPerc) || 0;
     let dAmt = subTotal * (dP / 100);
-    let afterDisc = subTotal - dAmt;
-    let vAmt = afterDisc * 0.05; 
     let dlv = parseFloat(b.deliveryCharges) || 0;
+    let afterDisc = subTotal - dAmt;
+    let vAmt = afterDisc * 0.05;
 
-    doc.setFontSize(9);
-    if (dAmt > 0) {
-        doc.text("Discount (" + dP + "%)", LEFT, y);
-        doc.text("-" + dAmt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
-    }
-    
-    doc.text("VAT Amt (5%)", LEFT, y);
-    doc.text(vAmt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
+    const html = buildThermalReceiptHtml({
+        billNo: b.billNo, dateStr: b.date, timeStr: b.time, shift: currentShift,
+        itemsHtml, discAmt: dAmt, dp: dP, vt: vAmt, dlv, grandTotal: parseFloat(b.amount),
+        itemCount: b.items.length, totalQty
+    });
 
-    if (dlv > 0) {
-        doc.text("Delivery Charges", LEFT, y);
-        doc.text(dlv.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
-    }
-
-    // 7. Grand Total
-    doc.setLineDashPattern([], 0); 
-    doc.line(RIGHT - 30, y, RIGHT, y); y += 6;
-    doc.setFontSize(14); doc.setFont("helvetica", "bold");
-    doc.text("GTotal:", CENTER, y); 
-    doc.text(parseFloat(b.amount).toFixed(3), RIGHT, y, {align: 'right'}); y += 8;
-    
-    // 8. Footer
-    doc.setFontSize(10); doc.setLineDashPattern([1, 1], 0);
-    doc.line(LEFT, y, RIGHT, y); y += 5;
-    doc.text("Items / Qty :    " + b.items.length + " / " + totalQty, LEFT, y);
-    y += 5; doc.line(LEFT, y, RIGHT, y); y += 7;
-    doc.setFontSize(7); doc.setFont("helvetica", "normal");
-    doc.text("Generated by ASH BAKES POS System", CENTER, y, {align: 'center'});
-
-    printThermal(doc);
+    printThermal(html);
 }
 
 
