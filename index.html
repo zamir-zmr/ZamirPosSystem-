@@ -2,55 +2,95 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Name Tag Print - 80mm</title>
+<title>Professional Label Print - 80mm</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
-    font-family: Arial, sans-serif;
-    background:#f0f0f0;
-    padding:10px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background:#e5e5e5;
+    padding:20px;
   }
-  .btn-bar { text-align:center; margin-bottom:15px; }
+  .btn-bar { text-align:center; margin-bottom:20px; }
   .btn-bar button {
-    padding:10px 20px;
-    font-size:16px;
+    padding:10px 22px;
+    font-size:15px;
     cursor:pointer;
-    background:#2563eb;
+    background:#111827;
     color:#fff;
     border:none;
     border-radius:6px;
     margin:0 5px;
+    letter-spacing:0.5px;
   }
+  .btn-bar button:hover { background:#000; }
+
   .tag {
     width: 80mm;
-    min-height: 50mm;
-    border: 1px dashed #333;
+    min-height: 45mm;
+    background:#fff;
+    margin:0 auto;
+    padding:5mm 4mm;
+    position:relative;
+    border: 1.5px solid #000;
+  }
+  .tag::before {
+    content:"";
+    position:absolute;
+    top:2mm; left:2mm; right:2mm; bottom:2mm;
+    border: 0.6px solid #000;
+    pointer-events:none;
+  }
+  .inner {
+    position:relative;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
+    height:100%;
     text-align:center;
-    background:#fff;
-    padding:5mm;
-    margin:0 auto;
+    padding: 3mm 2mm;
   }
-  .tag div {
-    outline: none;
+  .inner div {
+    outline:none;
     width:100%;
   }
-  .tag div:hover, .tag div:focus {
-    background:#fffbcc;
+  .inner div:hover, .inner div:focus { background:#fff8dc; }
+
+  .brand {
+    font-size:11px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:#555;
+    margin-bottom:4mm;
+    border-bottom:1px solid #ccc;
+    padding-bottom:2mm;
   }
-  .tag .logo { font-size:14px; font-weight:bold; color:#555; margin-bottom:8px; }
-  .tag .name { font-size:26px; font-weight:bold; color:#000; }
-  .tag .sub { font-size:14px; color:#777; margin-top:6px; }
+  .label {
+    font-size:13px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:#666;
+    margin-bottom:2mm;
+  }
+  .main-text {
+    font-size:26px;
+    font-weight:700;
+    color:#000;
+    letter-spacing:0.5px;
+    margin-bottom:3mm;
+  }
+  .sub-text {
+    font-size:12px;
+    color:#777;
+    margin-top:2mm;
+  }
 
   @media print {
     @page { size: 80mm auto; margin: 0; }
     .btn-bar { display:none; }
     body { background:#fff; padding:0; }
-    .tag { border:none; width:80mm; margin:0; }
-    .tag div:hover, .tag div:focus { background:transparent; }
+    .tag { margin:0; }
+    .inner div:hover, .inner div:focus { background:transparent; }
   }
 </style>
 </head>
@@ -61,9 +101,12 @@
 </div>
 
 <div class="tag">
-  <div class="logo" contenteditable="true">ASB - ASH BAKES</div>
-  <div class="name" contenteditable="true">Employee Name</div>
-  <div class="sub" contenteditable="true">Designation</div>
+  <div class="inner">
+    <div class="brand" contenteditable="true">ASB &bull; ASH BAKES</div>
+    <div class="label" contenteditable="true">For</div>
+    <div class="main-text" contenteditable="true">Al Khuwair</div>
+    <div class="sub-text" contenteditable="true">Sultanate of Oman</div>
+  </div>
 </div>
 
 </body>
