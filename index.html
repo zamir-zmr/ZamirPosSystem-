@@ -1132,7 +1132,7 @@ function showIndividualBills(dateKey, displayLabel) {
 // Function to handle Dropdown Change
 function updateMethodDropdown(billNo, newMethod, dateKey, label) {
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
-    let idx = sales.findIndex(s => String(s.billNo) === String(billNo));
+    let idx = sales.findIndex(s => String(s.billNo) === String(billNo) && s.date === dateKey);
     
     if (idx !== -1) {
         sales[idx].method = newMethod;
@@ -1157,7 +1157,7 @@ let editCartItems = []; // items jo edit ho rahe hain
 
 function openEditBillModal(billNo, dateKey, displayLabel) {
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
-    let bill = sales.find(s => String(s.billNo) === String(billNo));
+    let bill = sales.find(s => String(s.billNo) === String(billNo) && s.date === dateKey);
     if (!bill) return alert('Bill not found!');
 
     // Hidden fields set karein
@@ -1292,7 +1292,7 @@ function saveEditedBill() {
     let grand = afterDisc + vat + delivery;
 
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
-    let idx = sales.findIndex(s => String(s.billNo) === String(billNo));
+    let idx = sales.findIndex(s => String(s.billNo) === String(billNo) && s.date === dateKey);
     if (idx !== -1) {
         sales[idx].items = JSON.parse(JSON.stringify(editCartItems));
         sales[idx].amount = parseFloat(grand.toFixed(3));
@@ -1689,7 +1689,7 @@ function deleteBill(billNo, dateKey, displayLabel){
   document.getElementById('delBox').style.display='block';
   document.getElementById('delOkBtn').onclick = function(){
     let s = JSON.parse(localStorage.getItem('asb_sales_logs'))||[];
-    s = s.filter(x => String(x.billNo) !== String(billNo));
+    s = s.filter(x => !(String(x.billNo) === String(billNo) && x.date === dateKey));
     localStorage.setItem('asb_sales_logs', JSON.stringify(s));
     closeDelModal();
     showIndividualBills(dateKey, displayLabel);
