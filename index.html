@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ASH BAKES POS</title>
+    <script>
+    (function(){
+        var m = localStorage.getItem('asb_display_mode');
+        if(!m){ m = (window.innerWidth > 900) ? 'desktop' : 'mobile'; }
+        document.documentElement.className += ' dm-' + m;
+    })();
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -157,7 +164,48 @@
         .bill-row:active { background-color: #f1f5f9; }
 .bill-row { cursor: pointer; transition: background 0.2s; }
 
-        
+        /* ================= MODE TOGGLE BUTTON ================= */
+        #modeToggleBtn { background:#f1f5f9; border:none; padding:10px; border-radius:10px; font-size:16px; cursor:pointer; transition:0.2s; }
+        #modeToggleBtn:active { transform: scale(0.9); }
+
+        /* ================================================================
+           DESKTOP MODE — full alternate design (applied via html.dm-desktop)
+           Saved permanently in localStorage, switch with the header button.
+           ================================================================ */
+        html, body { overflow-x: hidden; }
+
+        html.dm-desktop { background: linear-gradient(135deg,#0f172a,#1e2b4d 60%,#0f172a); min-height: 100vh; }
+        html.dm-desktop body { max-width: 1440px; margin: 0 auto; box-shadow: 0 0 80px rgba(0,0,0,0.35); }
+
+        html.dm-desktop .h { padding: clamp(10px,2.5vw,18px) clamp(14px,4vw,40px); }
+        html.dm-desktop .logo-circle { width: clamp(46px,8vw,68px); height: clamp(46px,8vw,68px); }
+        html.dm-desktop .logo-box b { font-size: clamp(15px,2.2vw,24px) !important; }
+        html.dm-desktop #s { max-width: min(380px, 88vw); padding: 11px 14px; }
+
+        html.dm-desktop .mw { padding: clamp(12px,2.5vw,28px) clamp(14px,4vw,40px) 100px; }
+        html.dm-desktop .pg { grid-template-columns: repeat(auto-fill, minmax(clamp(105px,20vw,165px), 1fr)); gap: clamp(8px,2vw,20px); }
+        html.dm-desktop .pc { padding: clamp(12px,2vw,22px) 8px; border-radius: 16px; cursor: pointer; }
+        html.dm-desktop .pc:hover { transform: translateY(-5px); box-shadow: 0 14px 26px rgba(0,0,0,0.1); border-color: var(--secondary); }
+
+        /* Cart becomes a permanent-feel right sidebar drawer instead of a bottom sheet — capped at viewport width so it never overflows on small screens */
+        html.dm-desktop .cart-bar { width: min(440px, 100vw); max-width: 100vw; left: auto; right: 0; border-radius: 20px 0 0 0; padding: 16px clamp(14px,4vw,28px); box-sizing: border-box; }
+        html.dm-desktop #cart-panel { left: auto; right: 0; width: min(440px, 100vw); max-width: 100vw; height: 100dvh; border-radius: 0; box-shadow: -12px 0 40px rgba(0,0,0,0.18); transform: translateX(100%); box-sizing: border-box; }
+        html.dm-desktop #cart-panel.open { transform: translateX(0); }
+
+        /* Dashboard tiles laid out like a desktop app launcher */
+        html.dm-desktop .dash-container { max-width: min(760px, 96vw); margin: 40px auto 0; gap: clamp(12px,3vw,28px); padding: 10px; }
+        html.dm-desktop .dash-tile { width: clamp(85px,18vw,140px); height: clamp(85px,18vw,140px); border-radius: 20px; }
+        html.dm-desktop .dash-tile span { font-size: clamp(22px,4vw,38px); margin-bottom: 6px; }
+
+        /* Full-screen takeovers (dashboard/reports/bill-details/edit-bill) centered like a desktop window, capped to viewport width */
+        html.dm-desktop .full-page { max-width: 1440px; width: 100vw; left: 50%; transform: translateX(-50%); box-shadow: 0 0 80px rgba(0,0,0,0.3); }
+        html.dm-desktop .dash-header { padding: clamp(10px,2.5vw,20px) clamp(14px,4vw,40px); }
+        html.dm-desktop .report-content { max-width: min(1360px, 100vw); padding: clamp(12px,2.5vw,30px) clamp(14px,4vw,40px); box-sizing: border-box; }
+        html.dm-desktop .stats-panel { grid-template-columns: repeat(auto-fit, minmax(min(220px,80vw), 1fr)); }
+
+        /* Popup modals slightly larger + centered card feel, capped to viewport width */
+        html.dm-desktop .modal { max-width: min(440px, 90vw); padding: clamp(16px,4vw,30px); }
+        html.dm-desktop #billDetailsM, html.dm-desktop #editBillPanel { left: 50%; transform: translateX(-50%); max-width: 1440px; width: 100vw; }
     </style>
 </head>
 <body onload="initApp()">
@@ -169,6 +217,7 @@
                 <b style="font-size:20px; color:var(--primary)">ASH BAKES</b>
             </div>
             <div style="display:flex;gap:8px">
+                <button id="modeToggleBtn" onclick="toggleDisplayMode()" title="Switch Mobile/Desktop View">🖥️</button>
                 <button onclick="showDashboard()" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px">📊</button>
                 <button onclick="show('settingsM')" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px">⚙️</button>
                 <button onclick="showAdd()" style="background:var(--primary);color:#fff;border:none;padding:10px 15px;border-radius:10px;font-weight:bold">+ ITEM</button>
@@ -458,7 +507,18 @@ function updatePayStyle(method) {
         cart = [];
     let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '';
     
-    function initApp() { loadSavedLogo(); 
+    function applyDisplayMode(mode) {
+        document.documentElement.classList.remove('dm-mobile', 'dm-desktop');
+        document.documentElement.classList.add('dm-' + mode);
+        localStorage.setItem('asb_display_mode', mode);
+        var btn = document.getElementById('modeToggleBtn');
+        if (btn) btn.innerHTML = (mode === 'desktop') ? '📱' : '🖥️';
+    }
+    function toggleDisplayMode() {
+        var current = document.documentElement.classList.contains('dm-desktop') ? 'desktop' : 'mobile';
+        applyDisplayMode(current === 'desktop' ? 'mobile' : 'desktop');
+    }
+    function initApp() { applyDisplayMode(document.documentElement.classList.contains('dm-desktop') ? 'desktop' : 'mobile'); loadSavedLogo(); 
     location.hash = 'home'; render(); }
     function showDashboard() { document.getElementById('dashPage').style.display = 'flex'; }
     function closeDash() { document.getElementById('dashPage').style.display = 'none'; }
