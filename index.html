@@ -26,18 +26,18 @@
 
   .tag {
     width: 80mm;
-    min-height: 22mm;
+    min-height: 18mm;
     background:#fff;
     margin:0 auto;
-    padding:1.5mm 3mm;
+    padding:1mm 3mm;
     position:relative;
-    border: 1.2px solid #000;
+    border: 2px solid #000;
   }
   .tag::before {
     content:"";
     position:absolute;
-    top:1mm; left:1mm; right:1mm; bottom:1mm;
-    border: 0.5px solid #000;
+    top:0.8mm; left:0.8mm; right:0.8mm; bottom:0.8mm;
+    border: 1px solid #000;
     pointer-events:none;
   }
   .inner {
@@ -48,33 +48,34 @@
     justify-content:center;
     height:100%;
     text-align:center;
-    padding: 1.5mm 2mm;
+    padding: 1mm 2mm;
   }
   .inner div {
     outline:none;
     width:100%;
+    font-weight:800;
   }
   .inner div:hover, .inner div:focus { background:#fff8dc; }
 
   .brand {
-    font-size:8px;
+    font-size:11px;
     letter-spacing:2px;
     text-transform:uppercase;
-    color:#555;
-    margin-bottom:1mm;
-    padding-bottom:1mm;
-    border-bottom:0.5px solid #ccc;
+    color:#000;
+    margin-bottom:0.8mm;
+    padding-bottom:0.8mm;
+    border-bottom:1.5px solid #000;
   }
   .label {
-    font-size:9px;
+    font-size:12px;
     letter-spacing:1.5px;
     text-transform:uppercase;
-    color:#666;
+    color:#000;
     margin-bottom:0.5mm;
   }
   .main-text {
-    font-size:25px;
-    font-weight:700;
+    font-size:26px;
+    font-weight:900;
     color:#000;
     letter-spacing:0.3px;
   }
