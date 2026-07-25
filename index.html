@@ -26,18 +26,18 @@
 
   .tag {
     width: 80mm;
-    min-height: 45mm;
+    min-height: 28mm;
     background:#fff;
     margin:0 auto;
-    padding:5mm 4mm;
+    padding:2.5mm 3mm;
     position:relative;
-    border: 1.5px solid #000;
+    border: 1.2px solid #000;
   }
   .tag::before {
     content:"";
     position:absolute;
-    top:2mm; left:2mm; right:2mm; bottom:2mm;
-    border: 0.6px solid #000;
+    top:1.2mm; left:1.2mm; right:1.2mm; bottom:1.2mm;
+    border: 0.5px solid #000;
     pointer-events:none;
   }
   .inner {
@@ -48,7 +48,7 @@
     justify-content:center;
     height:100%;
     text-align:center;
-    padding: 3mm 2mm;
+    padding: 2mm 2mm;
   }
   .inner div {
     outline:none;
@@ -57,32 +57,26 @@
   .inner div:hover, .inner div:focus { background:#fff8dc; }
 
   .brand {
-    font-size:11px;
+    font-size:9px;
     letter-spacing:2px;
     text-transform:uppercase;
     color:#555;
-    margin-bottom:4mm;
-    border-bottom:1px solid #ccc;
-    padding-bottom:2mm;
+    margin-bottom:1.8mm;
+    padding-bottom:1.5mm;
+    border-bottom:0.5px solid #ccc;
   }
   .label {
-    font-size:13px;
-    letter-spacing:1px;
+    font-size:10px;
+    letter-spacing:1.5px;
     text-transform:uppercase;
     color:#666;
-    margin-bottom:2mm;
+    margin-bottom:1mm;
   }
   .main-text {
-    font-size:26px;
+    font-size:19px;
     font-weight:700;
     color:#000;
-    letter-spacing:0.5px;
-    margin-bottom:3mm;
-  }
-  .sub-text {
-    font-size:12px;
-    color:#777;
-    margin-top:2mm;
+    letter-spacing:0.3px;
   }
 
   @media print {
@@ -102,10 +96,9 @@
 
 <div class="tag">
   <div class="inner">
-    <div class="brand" contenteditable="true">ASB &bull; ASH BAKES</div>
+    <div class="brand" contenteditable="true">ASH BAKES</div>
     <div class="label" contenteditable="true">For</div>
     <div class="main-text" contenteditable="true">Al Khuwair</div>
-    <div class="sub-text" contenteditable="true">Sultanate of Oman</div>
   </div>
 </div>
 
