@@ -463,11 +463,30 @@
 <script>
 
 // 1. Menu JSON Export Function (Category + Items Backup)
+
+// Clean JSON Export (Strips heavy image base64 data)
 function exportMenuJSON() {
+    // Categories Clean Mapping
+    let cleanCategories = cats.map(c => ({
+        n: c.n,
+        i: c.i || ""
+    }));
+
+    // Menu Items Clean Mapping (Force photo to null)
+    let cleanMenuItems = menu.map(item => ({
+        id: item.id || Date.now(),
+        name: item.name,
+        price: item.price,
+        cat: item.cat,
+        photo: null
+    }));
+
     let exportData = {
-        categories: cats,
-        menuItems: menu
+        categories: cleanCategories,
+        menuItems: cleanMenuItems
     };
+
+    // Download Clean JSON
     let blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     let link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
