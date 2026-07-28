@@ -311,13 +311,59 @@
             <button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button>
         </div>
     </div>
-    <div class="modal" id="settingsM"><h3>Settings</h3>
-        <button class="btn" style="background:var(--primary); width:100%; margin-bottom:10px" onclick="closeM(); show('logoM')">🖼️ UPDATE LOGO</button>
-        <button class="btn" style="background:var(--a); width:100%; margin-bottom:10px" onclick="closeM(); showCatM()">➕ ADD CATEGORY</button>
-        <button class="btn" style="background:var(--w); width:100%; margin-bottom:10px" onclick="enableCatMulti()">🗑️ DELETE CATEGORIES</button>
-        <button class="btn" style="background:var(--secondary); width:100%; margin-bottom:10px" onclick="toggleMulti()">🛠️ MULTI-SELECT ITEMS</button>
-        <button class="btn" style="width:100%; background:var(--slate)" onclick="closeM()">CLOSE</button>
+
+<!-- Settings Modal with Import & Export Buttons -->
+
+<!-- Settings Modal -->
+<div class="modal" id="settingsM">
+    <h3>Settings</h3>
+    <button class="btn" style="background:var(--primary); width:100%; margin-bottom:10px" onclick="closeM(); show('logoM')">🖼️ UPDATE LOGO</button>
+    <button class="btn" style="background:var(--a); width:100%; margin-bottom:10px" onclick="closeM(); showCatM()">➕ ADD CATEGORY</button>
+    <button class="btn" style="background:var(--w); width:100%; margin-bottom:10px" onclick="enableCatMulti()">🗑️ DELETE CATEGORIES</button>
+    <button class="btn" style="background:var(--secondary); width:100%; margin-bottom:10px" onclick="toggleMulti()">🛠️ MULTI-SELECT ITEMS</button>
+    
+    <button class="btn" style="background:#8b5cf6; width:100%; margin-bottom:10px" onclick="exportMenuJSON()">📤 EXPORT JSON (BACKUP)</button>
+    <button class="btn" style="background:#0284c7; width:100%; margin-bottom:10px" onclick="document.getElementById('importMenuFile').click()">📥 IMPORT JSON FILE</button>
+    <input type="file" id="importMenuFile" accept=".json" style="display:none" onchange="importMenuJSON(event)">
+
+    <!-- Naya Paste JSON Text Button -->
+    <button class="btn" style="background:#059669; width:100%; margin-bottom:10px" onclick="openJsonPasteModal()">📋 PASTE JSON TEXT</button>
+
+    <button class="btn" style="width:100%; background:var(--slate)" onclick="closeM()">CLOSE</button>
+</div>
+
+<!-- Naya Modal Text Paste Karne Ke Liye -->
+<div class="modal" id="pasteJsonM" style="display:none;">
+    <h3>Paste JSON Text</h3>
+    <textarea id="jsonTextInput" rows="8" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; font-family:monospace; margin-bottom:10px;" placeholder='[&#10;  {&#10;    "category": "cake",&#10;    "item": "tiramisu",&#10;    "price": 2.5&#10;  }&#10;]'></textarea>
+    
+    <button class="btn" style="background:#059669; width:100%; margin-bottom:10px;" onclick="processPastedJson()">✅ ADD ITEMS</button>
+    <button class="btn" style="width:100%; background:var(--slate)" onclick="document.getElementById('pasteJsonM').style.display='none'">CANCEL</button>
+</div>
+
+<!-- Professional Custom Alert Modal -->
+
+<!-- Updated Custom Alert Modal with Dynamic Action Buttons -->
+
+<!-- Fully Detailed Custom Alert Modal -->
+<div class="modal" id="appAlertM" style="display:none; text-align:left; max-width:90%; width:380px;">
+    <h3 id="appAlertTitle" style="margin-bottom:12px; font-size: 1.2rem; font-weight:700;">Notification</h3>
+    
+    <!-- Detailed Items Summary Box -->
+    <div id="appAlertMsg" style="margin-bottom:18px; max-height:220px; overflow-y:auto; font-size:0.9rem; line-height:1.4;"></div>
+    
+    <!-- Buttons -->
+    <div id="alertSingleBtn">
+        <button class="btn" style="width:100%; background:var(--primary, #0ea5e9); padding:12px; font-weight:600; border-radius:10px;" onclick="closeAppAlert()">OK</button>
     </div>
+    
+    <div id="alertDoubleBtn" style="display:none; gap:10px;">
+        <button class="btn" style="flex:1; background:#059669; color:#fff; padding:12px; font-weight:600; border-radius:10px;" onclick="reOpenJsonModal()">MODIFY</button>
+        <button class="btn" style="flex:1; background:var(--slate, #64748b); color:#fff; padding:12px; font-weight:600; border-radius:10px;" onclick="closeAppAlert()">CANCEL</button>
+    </div>
+</div>
+
+
     <div class="modal" id="previewM"><h3>Receipt</h3><div id="preview-content"></div><div class="flex-btn"><button class="btn" style="background:var(--primary)" onclick="executePrint()">PRINT</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
     <div class="modal" id="delConfirmM"><h3>Delete?</h3><div class="flex-btn"><button class="btn" style="background:var(--d)" onclick="confirmDelete()">DELETE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
     <div class="modal" id="dupM"><div style="text-align:center"><h3>⚠️ Duplicated</h3><p id="dupMsg"></p><button class="btn" style="background:var(--secondary); width:100%" onclick="closeDup()">OK</button></div></div>
@@ -416,6 +462,106 @@
 
 <script>
 
+// 1. Menu JSON Export Function (Category + Items Backup)
+function exportMenuJSON() {
+    let exportData = {
+        categories: cats,
+        menuItems: menu
+    };
+    let blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `ASH_BAKES_MENU_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+}
+
+// 2. Menu JSON File Import Function
+
+
+function importMenuJSON(event) {
+    let file = event.target.files[0];
+    if (!file) return;
+
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            let data = JSON.parse(e.target.result);
+            
+            // Flexible Data Extraction
+            let itemsToImport = Array.isArray(data) ? data : (data.menuItems || data.items || []);
+            let categoriesToImport = data.categories || data.cats || [];
+
+            let addedCount = 0;
+            let updatedCount = 0;
+            let skippedCount = 0;
+
+            // 1. Import / Sync Categories
+            categoriesToImport.forEach(c => {
+                let catName = typeof c === 'string' ? c : (c.n || c.name);
+                if (catName && !cats.some(exCat => exCat.n.toLowerCase() === catName.toLowerCase())) {
+                    cats.push({ n: catName, i: c.i || '🍰', photo: c.photo || null });
+                }
+            });
+
+            // 2. Import / Sync Items
+            itemsToImport.forEach(item => {
+                let categoryName = item.cat || item.category || 'General';
+                let itemName = item.name || item.item;
+                let itemPrice = parseFloat(item.price) || 0;
+
+                if (!itemName) return;
+
+                // Auto Create Missing Category
+                if (!cats.some(c => c.n.toLowerCase() === categoryName.toLowerCase())) {
+                    cats.push({ n: categoryName, i: '🍰', photo: null });
+                }
+
+                // Check if Item Already Exists
+                let existingIndex = menu.findIndex(m => m.name.trim().toLowerCase() === itemName.trim().toLowerCase());
+
+                if (existingIndex !== -1) {
+                    // Option A: Pehle Se Exist Item Ko Update Karein (Price / Category / Photo)
+                    menu[existingIndex].price = itemPrice;
+                    menu[existingIndex].cat = categoryName;
+                    if (item.photo) menu[existingIndex].photo = item.photo;
+                    
+                    updatedCount++;
+                } else {
+                    // Option B: Naya Item Add Karein
+                    menu.push({
+                        id: Date.now() + Math.floor(Math.random() * 1000),
+                        name: itemName,
+                        price: itemPrice,
+                        cat: categoryName,
+                        photo: item.photo || null
+                    });
+                    addedCount++;
+                }
+            });
+
+            saveAll(); // Save to LocalStorage / Firebase & Refresh UI
+
+            // Custom Detailed Alert
+            let msg = `📥 **Import Summary:**\n`;
+            if (addedCount > 0) msg += `➕ ${addedCount} New item(s) added\n`;
+            if (updatedCount > 0) msg += `🔄 ${updatedCount} Existing item(s) updated\n`;
+            if (addedCount === 0 && updatedCount === 0) msg += `ℹ️ No changes made (Data matched existing menu)`;
+
+            showAppAlert(addedCount > 0 || updatedCount > 0 ? "✅ Success" : "ℹ️ Info", msg);
+
+            // Input reset
+            event.target.value = '';
+
+        } catch (err) {
+            showAppAlert("❌ Error", "Invalid JSON structure or file corrupt!");
+        }
+    };
+    reader.readAsText(file);
+}
+
+
+
+
 
 function updatePayStyle(method) {
     // Sabse pehle saare labels aur unke text colors ko reset karein
@@ -439,6 +585,202 @@ function updatePayStyle(method) {
         activeLabel.style.border = "1.5px solid #00C7C7"; // Cyan border
         activeLabel.style.background = "#f0fdfa";       // Halka cyan background
         activeLabel.querySelector('span:last-child').style.color = "#1e293b"; // Dark text
+    }
+}
+// Paste JSON Modal Kholne Ke Liye
+function openJsonPasteModal() {
+    closeM(); // Settings modal close karega
+    document.getElementById('jsonTextInput').value = '';
+    document.getElementById('pasteJsonM').style.display = 'block';
+}
+
+// Pasted JSON Text ko Process aur Import karne ki Logic
+
+// App Custom Alert Modal Trigger Functions
+function showAppAlert(title, message) {
+    document.getElementById('appAlertTitle').innerText = title;
+    document.getElementById('appAlertMsg').innerText = message;
+    
+    // Paste JSON modal ko chhupa kar Custom Alert Modal kholega
+    let pasteModal = document.getElementById('pasteJsonM');
+    if (pasteModal) pasteModal.style.display = 'none';
+
+    document.getElementById('appAlertM').style.display = 'block';
+}
+
+function closeAppAlert() {
+    document.getElementById('appAlertM').style.display = 'none';
+}
+
+// Paste JSON Logic (No Browser Alert)
+
+// Updated Process Pasted JSON Logic with 3 Distinct Popups
+
+// Show Alert Modal Function with 2-Button Toggle
+function showAppAlert(title, message, allowEdit = false) {
+    document.getElementById('appAlertTitle').innerText = title;
+    document.getElementById('appAlertMsg').innerText = message;
+    
+    // Hide paste modal temporarily
+    let pasteModal = document.getElementById('pasteJsonM');
+    if (pasteModal) pasteModal.style.display = 'none';
+
+    // Toggle Buttons based on condition
+    let singleBtn = document.getElementById('alertSingleBtn');
+    let doubleBtn = document.getElementById('alertDoubleBtn');
+
+    if (allowEdit) {
+        singleBtn.style.display = 'none';
+        doubleBtn.style.display = 'flex';
+    } else {
+        singleBtn.style.display = 'block';
+        doubleBtn.style.display = 'none';
+    }
+
+    document.getElementById('appAlertM').style.display = 'block';
+}
+
+function closeAppAlert() {
+    document.getElementById('appAlertM').style.display = 'none';
+}
+
+// EDIT JSON Click karne par wapas Textarea Modal kholega
+function reOpenJsonModal() {
+    closeAppAlert();
+    document.getElementById('pasteJsonM').style.display = 'block';
+}
+
+// Updated Process Pasted JSON Logic
+
+// Show Detailed Alert Modal
+function showAppAlertHTML(title, htmlContent, allowModify = false) {
+    document.getElementById('appAlertTitle').innerText = title;
+    document.getElementById('appAlertMsg').innerHTML = htmlContent;
+    
+    let pasteModal = document.getElementById('pasteJsonM');
+    if (pasteModal) pasteModal.style.display = 'none';
+
+    let singleBtn = document.getElementById('alertSingleBtn');
+    let doubleBtn = document.getElementById('alertDoubleBtn');
+
+    if (allowModify) {
+        singleBtn.style.display = 'none';
+        doubleBtn.style.display = 'flex';
+    } else {
+        singleBtn.style.display = 'block';
+        doubleBtn.style.display = 'none';
+    }
+
+    document.getElementById('appAlertM').style.display = 'block';
+}
+
+function closeAppAlert() {
+    document.getElementById('appAlertM').style.display = 'none';
+}
+
+function reOpenJsonModal() {
+    closeAppAlert();
+    document.getElementById('pasteJsonM').style.display = 'block';
+}
+
+// Complete Process Pasted JSON with Item Names & Dynamic Buttons
+function processPastedJson() {
+    let rawText = document.getElementById('jsonTextInput').value.trim();
+    
+    if (!rawText) {
+        showAppAlertHTML("⚠️ Empty Input", "<p style='color:#ef4444;'>Kripya pehle JSON text paste karein!</p>", true);
+        return;
+    }
+
+    try {
+        let data = JSON.parse(rawText);
+        let addedItems = [];
+        let skippedItems = [];
+
+        let itemsToImport = Array.isArray(data) ? data : (data.menuItems || []);
+        let categoriesToImport = data.categories || [];
+
+        // 1. Categories Import
+        categoriesToImport.forEach(c => {
+            let catName = typeof c === 'string' ? c : c.n;
+            if (catName && !cats.some(existingCat => existingCat.n.toLowerCase() === catName.toLowerCase())) {
+                cats.push({ n: catName, i: c.i || '🍰', photo: c.photo || null });
+            }
+        });
+
+        // 2. Items Import & Track Names
+        itemsToImport.forEach(item => {
+            let categoryName = item.category || item.cat || 'General';
+            let itemName = item.item || item.name;
+            let itemPrice = parseFloat(item.price) || 0;
+
+            if (!itemName) return;
+
+            // Auto Create Category
+            let catExists = cats.some(c => c.n.toLowerCase() === categoryName.toLowerCase());
+            if (!catExists) {
+                cats.push({ n: categoryName, i: '🍹', photo: null });
+            }
+
+            // Duplicate Check
+            let itemExists = menu.some(m => m.name.toLowerCase() === itemName.toLowerCase());
+
+            if (!itemExists) {
+                menu.push({
+                    id: Date.now() + Math.floor(Math.random() * 1000),
+                    name: itemName,
+                    price: itemPrice,
+                    cat: categoryName,
+                    photo: item.photo || null
+                });
+                addedItems.push(itemName);
+            } else {
+                skippedItems.push(itemName);
+            }
+        });
+
+        saveAll();
+
+        // --- HTML Content Generator for Popup ---
+        let htmlReport = '';
+
+        if (addedItems.length > 0) {
+            htmlReport += `<div style="margin-bottom:10px;">
+                <b style="color:#059669;">✅ Added Items (${addedItems.length}):</b>
+                <ul style="margin:5px 0 10px 18px; padding:0; color:#334155;">
+                    ${addedItems.map(name => `<li>${name}</li>`).join('')}
+                </ul>
+            </div>`;
+        }
+
+        if (skippedItems.length > 0) {
+            htmlReport += `<div style="margin-bottom:10px;">
+                <b style="color:#d97706;">⚠️ Skipped Duplicates (${skippedItems.length}):</b>
+                <ul style="margin:5px 0 0 18px; padding:0; color:#64748b;">
+                    ${skippedItems.map(name => `<li>${name}</li>`).join('')}
+                </ul>
+            </div>`;
+        }
+
+        // --- BUTTON CONDITION RULES ---
+        if (skippedItems.length > 0) {
+            // Agar ek bhi duplicate skip hua -> MODIFY & CANCEL
+            showAppAlertHTML("⚠️ Import Result", htmlReport, true);
+        } else if (addedItems.length > 0 && skippedItems.length === 0) {
+            // Agar saare 100% add ho gaye -> OK
+            showAppAlertHTML("✅ Import Successful!", htmlReport, false);
+        } else {
+            // Koi item add nahi hua
+            showAppAlertHTML("⚠️ No Items Found", "<p>JSON mein koi naya item nahi mila.</p>", true);
+        }
+
+    } catch (err) {
+        // Invalid JSON -> MODIFY & CANCEL
+        showAppAlertHTML(
+            "❌ Invalid JSON!", 
+            "<p style='color:#ef4444;'>Aapka paste kiya gaya JSON format galat hai. Modify par click karke fix karein.</p>", 
+            true
+        );
     }
 }
 
