@@ -499,7 +499,7 @@ function importMenuJSON(event) {
             categoriesToImport.forEach(c => {
                 let catName = typeof c === 'string' ? c : (c.n || c.name);
                 if (catName && !cats.some(exCat => exCat.n.toLowerCase() === catName.toLowerCase())) {
-                    cats.push({ n: catName, i: c.i || '🍰', photo: c.photo || null });
+                    cats.push({ n: catName, i: c.i || '', photo: c.photo || null });
                 }
             });
 
@@ -513,7 +513,7 @@ function importMenuJSON(event) {
 
                 // Auto Create Missing Category
                 if (!cats.some(c => c.n.toLowerCase() === categoryName.toLowerCase())) {
-                    cats.push({ n: categoryName, i: '🍰', photo: null });
+                    cats.push({ n: categoryName, i: '', photo: null });
                 }
 
                 // Check if Item Already Exists
@@ -704,7 +704,7 @@ function processPastedJson() {
         categoriesToImport.forEach(c => {
             let catName = typeof c === 'string' ? c : c.n;
             if (catName && !cats.some(existingCat => existingCat.n.toLowerCase() === catName.toLowerCase())) {
-                cats.push({ n: catName, i: c.i || '🍰', photo: c.photo || null });
+                cats.push({ n: catName, i: c.i || '', photo: c.photo || null });
             }
         });
 
@@ -719,7 +719,7 @@ function processPastedJson() {
             // Auto Create Category
             let catExists = cats.some(c => c.n.toLowerCase() === categoryName.toLowerCase());
             if (!catExists) {
-                cats.push({ n: categoryName, i: '🍹', photo: null });
+                cats.push({ n: categoryName, i: '', photo: null });
             }
 
             // Duplicate Check
