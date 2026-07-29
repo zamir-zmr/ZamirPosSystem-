@@ -465,6 +465,50 @@
 // 1. Menu JSON Export Function (Category + Items Backup)
 
 // Clean JSON Export (Strips heavy image base64 data)
+// ==========================================
+// 1. DATA LIFETIME PERSISTENCE (SAVE & LOAD)
+// ==========================================
+
+// Complete Save Function (LocalStorage & Refresh)
+function saveAll() {
+    try {
+        localStorage.setItem('ASH_BAKES_CATS', JSON.stringify(cats));
+        localStorage.setItem('ASH_BAKES_MENU', JSON.stringify(menu));
+        
+        // Agar aap Firebase use kar rahe hain, toh uski save logic bhi chalegi
+        if (typeof saveToFirebase === 'function') {
+            saveToFirebase(cats, menu);
+        }
+
+        // UI Refresh Functions (Agar aapke app me render/update function hai)
+        if (typeof renderMenu === 'function') renderMenu();
+        if (typeof renderCategories === 'function') renderCategories();
+    } catch (e) {
+        console.error("Storage Save Error: ", e);
+    }
+}
+
+// App launch par Lifetime Saved Data Load karega
+window.addEventListener('DOMContentLoaded', () => {
+    let savedCats = localStorage.getItem('ASH_BAKES_CATS');
+    let savedMenu = localStorage.getItem('ASH_BAKES_MENU');
+
+    if (savedCats) {
+        try { cats = JSON.parse(savedCats); } catch(e){}
+    }
+    if (savedMenu) {
+        try { menu = JSON.parse(savedMenu); } catch(e){}
+    }
+
+    if (typeof renderMenu === 'function') renderMenu();
+    if (typeof renderCategories === 'function') renderCategories();
+});
+
+
+// ==========================================
+// 2. AAPKE EXISTING CODE FUNCTIONS (INTACT)
+// ==========================================
+
 function exportMenuJSON() {
     // Categories Clean Mapping
     let cleanCategories = cats.map(c => ({
@@ -494,9 +538,6 @@ function exportMenuJSON() {
     link.click();
 }
 
-// 2. Menu JSON File Import Function
-
-
 function importMenuJSON(event) {
     let file = event.target.files[0];
     if (!file) return;
@@ -512,7 +553,6 @@ function importMenuJSON(event) {
 
             let addedCount = 0;
             let updatedCount = 0;
-            let skippedCount = 0;
 
             // 1. Import / Sync Categories
             categoriesToImport.forEach(c => {
@@ -558,7 +598,7 @@ function importMenuJSON(event) {
                 }
             });
 
-            saveAll(); // Save to LocalStorage / Firebase & Refresh UI
+            saveAll(); // Permanent LocalStorage Save
 
             // Custom Detailed Alert
             let msg = `📥 **Import Summary:**\n`;
@@ -578,100 +618,56 @@ function importMenuJSON(event) {
     reader.readAsText(file);
 }
 
-
-
-
-
 function updatePayStyle(method) {
-    // Sabse pehle saare labels aur unke text colors ko reset karein
     const labels = {
         'transfer': document.getElementById('lbl-t'),
         'atm': document.getElementById('lbl-a'),
         'cash': document.getElementById('lbl-c')
     };
 
-    // Sabko normal style mein set karein
     for (let key in labels) {
-        labels[key].style.border = "1.5px solid #f1f5f9";
-        labels[key].style.background = "#ffffff";
-        // Label ke andar jo text (method name) hai uska color grey karein
-        labels[key].querySelector('span:last-child').style.color = "#64748b";
+        if(labels[key]) {
+            labels[key].style.border = "1.5px solid #f1f5f9";
+            labels[key].style.background = "#ffffff";
+            labels[key].querySelector('span:last-child').style.color = "#64748b";
+        }
     }
 
-    // Ab jo method select hua hai, usko highlight karein
     const activeLabel = labels[method];
     if (activeLabel) {
-        activeLabel.style.border = "1.5px solid #00C7C7"; // Cyan border
-        activeLabel.style.background = "#f0fdfa";       // Halka cyan background
-        activeLabel.querySelector('span:last-child').style.color = "#1e293b"; // Dark text
+        activeLabel.style.border = "1.5px solid #00C7C7";
+        activeLabel.style.background = "#f0fdfa";
+        activeLabel.querySelector('span:last-child').style.color = "#1e293b";
     }
 }
-// Paste JSON Modal Kholne Ke Liye
+
 function openJsonPasteModal() {
-    closeM(); // Settings modal close karega
+    if(typeof closeM === 'function') closeM();
     document.getElementById('jsonTextInput').value = '';
     document.getElementById('pasteJsonM').style.display = 'block';
 }
 
-// Pasted JSON Text ko Process aur Import karne ki Logic
-
-// App Custom Alert Modal Trigger Functions
-function showAppAlert(title, message) {
-    document.getElementById('appAlertTitle').innerText = title;
-    document.getElementById('appAlertMsg').innerText = message;
-    
-    // Paste JSON modal ko chhupa kar Custom Alert Modal kholega
-    let pasteModal = document.getElementById('pasteJsonM');
-    if (pasteModal) pasteModal.style.display = 'none';
-
-    document.getElementById('appAlertM').style.display = 'block';
-}
-
-function closeAppAlert() {
-    document.getElementById('appAlertM').style.display = 'none';
-}
-
-// Paste JSON Logic (No Browser Alert)
-
-// Updated Process Pasted JSON Logic with 3 Distinct Popups
-
-// Show Alert Modal Function with 2-Button Toggle
 function showAppAlert(title, message, allowEdit = false) {
     document.getElementById('appAlertTitle').innerText = title;
     document.getElementById('appAlertMsg').innerText = message;
     
-    // Hide paste modal temporarily
     let pasteModal = document.getElementById('pasteJsonM');
     if (pasteModal) pasteModal.style.display = 'none';
 
-    // Toggle Buttons based on condition
     let singleBtn = document.getElementById('alertSingleBtn');
     let doubleBtn = document.getElementById('alertDoubleBtn');
 
     if (allowEdit) {
-        singleBtn.style.display = 'none';
-        doubleBtn.style.display = 'flex';
+        if(singleBtn) singleBtn.style.display = 'none';
+        if(doubleBtn) doubleBtn.style.display = 'flex';
     } else {
-        singleBtn.style.display = 'block';
-        doubleBtn.style.display = 'none';
+        if(singleBtn) singleBtn.style.display = 'block';
+        if(doubleBtn) doubleBtn.style.display = 'none';
     }
 
     document.getElementById('appAlertM').style.display = 'block';
 }
 
-function closeAppAlert() {
-    document.getElementById('appAlertM').style.display = 'none';
-}
-
-// EDIT JSON Click karne par wapas Textarea Modal kholega
-function reOpenJsonModal() {
-    closeAppAlert();
-    document.getElementById('pasteJsonM').style.display = 'block';
-}
-
-// Updated Process Pasted JSON Logic
-
-// Show Detailed Alert Modal
 function showAppAlertHTML(title, htmlContent, allowModify = false) {
     document.getElementById('appAlertTitle').innerText = title;
     document.getElementById('appAlertMsg').innerHTML = htmlContent;
@@ -683,11 +679,11 @@ function showAppAlertHTML(title, htmlContent, allowModify = false) {
     let doubleBtn = document.getElementById('alertDoubleBtn');
 
     if (allowModify) {
-        singleBtn.style.display = 'none';
-        doubleBtn.style.display = 'flex';
+        if(singleBtn) singleBtn.style.display = 'none';
+        if(doubleBtn) doubleBtn.style.display = 'flex';
     } else {
-        singleBtn.style.display = 'block';
-        doubleBtn.style.display = 'none';
+        if(singleBtn) singleBtn.style.display = 'block';
+        if(doubleBtn) doubleBtn.style.display = 'none';
     }
 
     document.getElementById('appAlertM').style.display = 'block';
@@ -702,7 +698,6 @@ function reOpenJsonModal() {
     document.getElementById('pasteJsonM').style.display = 'block';
 }
 
-// Complete Process Pasted JSON with Item Names & Dynamic Buttons
 function processPastedJson() {
     let rawText = document.getElementById('jsonTextInput').value.trim();
     
@@ -758,9 +753,8 @@ function processPastedJson() {
             }
         });
 
-        saveAll();
+        saveAll(); // Permanent LocalStorage Save
 
-        // --- HTML Content Generator for Popup ---
         let htmlReport = '';
 
         if (addedItems.length > 0) {
@@ -781,20 +775,15 @@ function processPastedJson() {
             </div>`;
         }
 
-        // --- BUTTON CONDITION RULES ---
         if (skippedItems.length > 0) {
-            // Agar ek bhi duplicate skip hua -> MODIFY & CANCEL
             showAppAlertHTML("⚠️ Import Result", htmlReport, true);
         } else if (addedItems.length > 0 && skippedItems.length === 0) {
-            // Agar saare 100% add ho gaye -> OK
             showAppAlertHTML("✅ Import Successful!", htmlReport, false);
         } else {
-            // Koi item add nahi hua
             showAppAlertHTML("⚠️ No Items Found", "<p>JSON mein koi naya item nahi mila.</p>", true);
         }
 
     } catch (err) {
-        // Invalid JSON -> MODIFY & CANCEL
         showAppAlertHTML(
             "❌ Invalid JSON!", 
             "<p style='color:#ef4444;'>Aapka paste kiya gaya JSON format galat hai. Modify par click karke fix karein.</p>", 
