@@ -853,7 +853,7 @@ function processPastedJson() {
     async function executePrint() {
     const { jsPDF } = window.jspdf;
     const itemRowH = 6; 
-    const headH = 95; 
+    const headH = 105; 
     const footH = 65;
     const dynH = headH + (cart.length * itemRowH) + footH + 20; 
     const doc = new jsPDF({ unit: 'mm', format: [80, dynH] });
@@ -877,7 +877,7 @@ function processPastedJson() {
 
     // Logo
     let savedPhoto = localStorage.getItem('savedPhotoUrl');
-    if (savedPhoto) { try { doc.addImage(savedPhoto, 'PNG', 20, y, 40, 40); y += 45; } catch (e) { y += 5; } }
+    if (savedPhoto) { try { doc.addImage(savedPhoto, 'PNG', 15, y, 50, 50); y += 55; } catch (e) { y += 5; } }
 
     // Header Info
     doc.setFontSize(10); doc.text("AL SEEB", CENTER, y, {align:'center'}); y += 4;
@@ -930,8 +930,10 @@ function processPastedJson() {
         doc.text("-" + discAmt.toFixed(3), RIGHT, y, {align: 'right'});
         y += 5;
     }
+    doc.setFontSize(11); doc.setFont("helvetica", "bold");
     doc.text("VAT Amt (5%)", LEFT, y);
     doc.text(vt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
+    doc.setFontSize(9); doc.setFont("helvetica", "normal");
 
     if (dlv > 0) {
         doc.text("Delivery Charges", LEFT, y);
@@ -1439,7 +1441,7 @@ function showIndividualBills(dateKey, displayLabel) {
             container.innerHTML += `
                 <div class="bill-row" style="display:flex; flex-direction:column; padding:12px 10px; border-bottom:1px solid #f1f5f9; background: white; margin-bottom: 8px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div onclick="reprintBill('${b.billNo}')" style="display:flex; align-items:center; gap:10px; flex: 1; cursor:pointer;">
+                        <div onclick="reprintBill('${b.billNo}', '${dateKey}')" style="display:flex; align-items:center; gap:10px; flex: 1; cursor:pointer;">
                             <div style="background:${themeColor}; color:white; width:26px; height:26px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;">
                                 ${index + 1}
                             </div>
@@ -1665,15 +1667,16 @@ function closeEditBillPanel() {
 // Keep old names for compatibility
 function closeEditBillModal() { closeEditBillPanel(); }
 
-function reprintBill(billNo) {
+function reprintBill(billNo, dateKey) {
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
-    let b = sales.find(s => String(s.billNo) === String(billNo));
+    let b = dateKey ? sales.find(s => String(s.billNo) === String(billNo) && s.date === dateKey)
+                    : sales.find(s => String(s.billNo) === String(billNo));
 
     if (!b) return alert("Error: Bill data not found!");
     
     const { jsPDF } = window.jspdf;
     const itemRowH = 6; 
-    const headH = 95; 
+    const headH = 105; 
     const footH = 85; 
     const dynH = headH + (b.items.length * itemRowH) + footH + 20; 
     
@@ -1683,7 +1686,7 @@ function reprintBill(billNo) {
 
     // 1. Logo
     let savedPhoto = localStorage.getItem('savedPhotoUrl');
-    if (savedPhoto) { try { doc.addImage(savedPhoto, 'PNG', 20, y, 40, 40); y += 45; } catch (e) { y += 5; } }
+    if (savedPhoto) { try { doc.addImage(savedPhoto, 'PNG', 15, y, 50, 50); y += 55; } catch (e) { y += 5; } }
 
     // 2. Header
     doc.setFontSize(10); doc.text("AL SEEB", CENTER, y, {align:'center'}); y += 4;
@@ -1752,8 +1755,10 @@ function reprintBill(billNo) {
         doc.text("-" + dAmt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
     }
     
+    doc.setFontSize(11); doc.setFont("helvetica", "bold");
     doc.text("VAT Amt (5%)", LEFT, y);
     doc.text(vAmt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
+    doc.setFontSize(9); doc.setFont("helvetica", "normal");
 
     if (dlv > 0) {
         doc.text("Delivery Charges", LEFT, y);
