@@ -6,6 +6,7 @@
     <title>ASH BAKES POS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root { --primary: #00C7C7; --secondary: #3b82f6; --a: #10b981; --d: #ef4444; --s: #f8fafc; --w: #f59e0b; --slate: #64748b; }
         * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -46,6 +47,19 @@
         .icon-opt { font-size: 24px; padding: 8px; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; text-align: center; transition: 0.2s; }
         .icon-opt.selected { background: var(--primary); border-color: var(--primary); color: white; }
         
+        /* Ticket Screen Styling */
+        #ticketPage { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8fafc; z-index: 2600; display: flex; flex-direction: column; }
+        .ticket-header { background:#fff; padding:14px 16px; border-bottom:1px solid #e2e8f0; flex-shrink:0; }
+        .ticket-tabs { display:flex; gap:8px; margin-top:10px; }
+        .ticket-tab { flex:1; text-align:center; padding:10px 6px; border-radius:10px; font-weight:700; font-size:13px; background:#f1f5f9; color:#334155; cursor:pointer; }
+        .ticket-tab.active { background:var(--primary); color:#fff; }
+        .ticket-grid-wrap { flex:1; overflow-y:auto; padding:14px; }
+        .ticket-grid { display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; }
+        .ticket-cell { background:#b98c62; color:#fff; text-align:center; padding:18px 4px; border-radius:14px; font-weight:800; font-size:18px; cursor:pointer; box-shadow: 0 3px 8px rgba(0,0,0,0.08); transition:0.15s; }
+        .ticket-cell:active { transform: scale(0.94); }
+        .ticket-cell.used { background: var(--secondary); }
+        .ticket-badge { display:flex; align-items:center; gap:6px; background:#eff6ff; color:var(--secondary); border:1.5px solid var(--secondary); padding:6px 12px; border-radius:20px; font-weight:800; font-size:13px; cursor:pointer; }
+
         /* Dashboard Styling */
         .full-page { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8fafc; z-index: 2000; display: none; flex-direction: column; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -161,6 +175,18 @@
     </style>
 </head>
 <body onload="initApp()">
+
+    <div id="ticketPage">
+        <div class="ticket-header">
+            <b style="font-size:20px; color:var(--primary)">SELECT TICKET NUMBER</b>
+            <div class="ticket-tabs">
+                <div class="ticket-tab active" id="tTab1" onclick="switchTicketTab(1)">1-50</div>
+                <div class="ticket-tab" id="tTab2" onclick="switchTicketTab(2)">51-100</div>
+            </div>
+        </div>
+        <div class="ticket-grid-wrap"><div class="ticket-grid" id="ticketGrid"></div></div>
+    </div>
+
     <div class="h">
         <div style="display:flex;justify-content:space-between;align-items:center">
             <div class="logo-box">
@@ -168,7 +194,8 @@
                 <div class="logo-circle" id="main-logo-container"><b>ASH</b><span>BAKES</span></div>
                 <b style="font-size:20px; color:var(--primary)">ASH BAKES</b>
             </div>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px; align-items:center">
+                <div class="ticket-badge" id="ticketBadge" onclick="showTicketPage()">🎫 --</div>
                 <button onclick="showDashboard()" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px">📊</button>
                 <button onclick="show('settingsM')" style="background:#f1f5f9;border:none;padding:10px;border-radius:10px">⚙️</button>
                 <button onclick="showAdd()" style="background:var(--primary);color:#fff;border:none;padding:10px 15px;border-radius:10px;font-weight:bold">+ ITEM</button>
@@ -202,6 +229,10 @@
         <button onclick="history.back()" style="border: none; background: #f1f5f9; width: 40px; height: 40px; border-radius: 12px; font-size: 20px; color: #64748b; cursor: pointer;">×</button>
     </div>
 
+    <div style="padding: 0 20px 12px;">
+        <input type="tel" id="cust-phone" placeholder="📞 Customer Phone Number" style="width:100%; box-sizing:border-box; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; font-weight:600; outline:none;">
+    </div>
+
     <div id="cart-list" style="flex: 1; overflow-y: auto; padding: 15px;">
         </div>
 
@@ -225,24 +256,9 @@
             </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <span style="font-weight: 800; color: #1e293b; font-size: 14px;">GRAND TOTAL</span>
-            <span id="grand-total" style="font-size: 28px; font-weight: 900; color: #00C7C7;">0.000 <small style="font-size: 12px;">OMR</small></span>
-        </div>
-
-        <div style="display: flex; gap: 8px; margin-bottom: 20px;">
-            <input type="radio" name="payMethod" value="Transfer" id="t-opt" checked style="display:none;">
-            <label for="t-opt" onclick="updatePayStyle('transfer')" id="lbl-t" style="flex:1; cursor:pointer; padding:10px; border: 1.5px solid #00C7C7; border-radius: 12px; text-align:center; background: #f0fdfa;">
-                <span style="font-size: 16px;">🏦</span><br><span style="font-size: 9px; font-weight: 800; color:#1e293b;">TRANSFER</span>
-            </label>
-            <input type="radio" name="payMethod" value="Atm" id="a-opt" style="display:none;">
-            <label for="a-opt" onclick="updatePayStyle('atm')" id="lbl-a" style="flex:1; cursor:pointer; padding:10px; border: 1.5px solid #f1f5f9; border-radius: 12px; text-align:center; background: #fff;">
-                <span style="font-size: 16px;">💳</span><br><span style="font-size: 9px; font-weight: 800; color:#64748b;">ATM CARD</span>
-            </label>
-            <input type="radio" name="payMethod" value="Cash" id="c-opt" style="display:none;">
-            <label for="c-opt" onclick="updatePayStyle('cash')" id="lbl-c" style="flex:1; cursor:pointer; padding:10px; border: 1.5px solid #f1f5f9; border-radius: 12px; text-align:center; background: #fff;">
-                <span style="font-size: 16px;">💵</span><br><span style="font-size: 9px; font-weight: 800; color:#64748b;">CASH</span>
-            </label>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 6px 10px;">
+            <span style="font-weight: 800; color: #1e293b; font-size: 14px; flex-shrink:0;">GRAND TOTAL</span>
+            <span id="grand-total" style="font-size: 24px; font-weight: 900; color: #00C7C7; text-align:right; margin-left:auto; white-space:nowrap;">0.000 <small style="font-size: 12px;">OMR</small></span>
         </div>
 
         <div style="display: flex; gap: 12px;">
@@ -807,9 +823,124 @@ function processPastedJson() {
         cats = JSON.parse(localStorage.getItem('asb_c')) || [{n:'Cakes', i:''}, {n:'Snacks', i:''}], 
         cart = [];
     let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '';
+    let currentTicket = null, ticketsUsed = [], activeTicketTab = 1;
     
     function initApp() { loadSavedLogo(); 
-    location.hash = 'home'; render(); }
+    location.hash = 'home'; render(); loadTicketState(); showTicketPage(); }
+
+    function todayLocalStr() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; }
+
+    function loadTicketState() {
+        const today = todayLocalStr();
+        const savedDate = localStorage.getItem('asb_ticket_date');
+        if (savedDate !== today) {
+            ticketsUsed = [];
+            localStorage.setItem('asb_ticket_date', today);
+            localStorage.setItem('asb_tickets_used', JSON.stringify([]));
+        } else {
+            ticketsUsed = JSON.parse(localStorage.getItem('asb_tickets_used')) || [];
+        }
+    }
+
+    function markTicketUsed(num) {
+        loadTicketState();
+        if (!ticketsUsed.includes(num)) ticketsUsed.push(num);
+        localStorage.setItem('asb_ticket_date', todayLocalStr());
+        localStorage.setItem('asb_tickets_used', JSON.stringify(ticketsUsed));
+    }
+
+    function switchTicketTab(tab) {
+        activeTicketTab = tab;
+        document.getElementById('tTab1').classList.toggle('active', tab === 1);
+        document.getElementById('tTab2').classList.toggle('active', tab === 2);
+        renderTicketGrid();
+    }
+
+    function renderTicketGrid() {
+        loadTicketState();
+        const grid = document.getElementById('ticketGrid');
+        grid.innerHTML = '';
+        const start = activeTicketTab === 1 ? 1 : 51;
+        const end = activeTicketTab === 1 ? 50 : 100;
+        for (let i = start; i <= end; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'ticket-cell' + (ticketsUsed.includes(i) ? ' used' : '');
+            cell.innerText = i;
+            cell.onclick = () => selectTicket(i);
+            grid.appendChild(cell);
+        }
+    }
+
+    function showTicketPage() {
+        renderTicketGrid();
+        document.getElementById('ticketPage').style.display = 'flex';
+    }
+
+    function getTicketCart(num) {
+        let all = JSON.parse(localStorage.getItem('asb_ticket_carts')) || {};
+        return all[num] || null;
+    }
+    function persistTicketCart() {
+        if (!currentTicket) return;
+        let all = JSON.parse(localStorage.getItem('asb_ticket_carts')) || {};
+        all[currentTicket] = {
+            items: JSON.parse(JSON.stringify(cart)),
+            phone: (document.getElementById('cust-phone') && document.getElementById('cust-phone').value) || '',
+            disc: parseFloat(document.getElementById('disc-val').value) || 0,
+            deliv: parseFloat(document.getElementById('deliv-val').value) || 0
+        };
+        localStorage.setItem('asb_ticket_carts', JSON.stringify(all));
+    }
+    function clearTicketCart(num) {
+        let all = JSON.parse(localStorage.getItem('asb_ticket_carts')) || {};
+        delete all[num];
+        localStorage.setItem('asb_ticket_carts', JSON.stringify(all));
+    }
+    function releaseTicketIfSameDay(ticketNo, dateKey) {
+        if (!ticketNo) return;
+        if (dateKey !== todayLocalStr()) return;
+        let num = parseInt(ticketNo);
+        loadTicketState();
+        ticketsUsed = ticketsUsed.filter(n => n !== num);
+        localStorage.setItem('asb_tickets_used', JSON.stringify(ticketsUsed));
+        clearTicketCart(num);
+        if (currentTicket === num) currentTicket = null;
+    }
+    // method truthy (Transfer/ATM/Cash) => bill settled, ticket free ho jaega (brown)
+    // method blank (Pending) => ticket phir se used maana jaega (blue)
+    function setTicketMethodState(ticketNo, dateKey, method) {
+        if (!ticketNo) return;
+        if (dateKey !== todayLocalStr()) return;
+        let num = parseInt(ticketNo);
+        if (method) {
+            releaseTicketIfSameDay(ticketNo, dateKey);
+        } else {
+            markTicketUsed(num);
+        }
+    }
+    function getPendingBillForTicket(ticketNo) {
+        if (!ticketNo) return null;
+        let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+        const today = todayLocalStr();
+        return sales.find(s => s.date === today && String(s.ticketNo) === String(ticketNo) && !s.method) || null;
+    }
+
+    function selectTicket(num) {
+        currentTicket = num;
+        let saved = getTicketCart(num);
+        cart = saved ? JSON.parse(JSON.stringify(saved.items || [])) : [];
+        const phoneEl = document.getElementById('cust-phone');
+        if (phoneEl) phoneEl.value = saved ? (saved.phone || '') : '';
+        if (document.getElementById('disc-val')) document.getElementById('disc-val').value = saved ? (saved.disc || 0) : 0;
+        if (document.getElementById('deliv-val')) document.getElementById('deliv-val').value = saved ? (saved.deliv || 0) : 0;
+        document.getElementById('ticketBadge').innerText = '🎫 #' + num;
+        document.getElementById('ticketPage').style.display = 'none';
+        toggleCart(false);
+        location.hash = 'home';
+        curCat = null;
+        render();
+        updateCartUI();
+    }
     function showDashboard() { document.getElementById('dashPage').style.display = 'flex'; }
     function closeDash() { document.getElementById('dashPage').style.display = 'none'; }
 
@@ -866,14 +997,19 @@ function processPastedJson() {
     
     const todayLocal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const lastSavedDate = localStorage.getItem('asb_last_date') || '';
+    let pendingBill = getPendingBillForTicket(currentTicket);
     let billCount;
-    if (lastSavedDate !== todayLocal) {
+    if (pendingBill) {
+        billCount = pendingBill.billNo;
+    } else if (lastSavedDate !== todayLocal) {
         billCount = 1;
     } else {
         billCount = (parseInt(localStorage.getItem('asb_bill_count')) || 0) + 1;
     }
-    localStorage.setItem('asb_last_date', todayLocal);
-    localStorage.setItem('asb_bill_count', billCount);
+    if (!pendingBill) {
+        localStorage.setItem('asb_last_date', todayLocal);
+        localStorage.setItem('asb_bill_count', billCount);
+    }
 
     // Logo
     let savedPhoto = localStorage.getItem('savedPhotoUrl');
@@ -887,10 +1023,12 @@ function processPastedJson() {
     doc.text("Take Away Hall", CENTER, y, {align:'center'}); y += 8;
 
     // Bill Details
-    doc.setFontSize(10); doc.text( "Bill no: " + billCount, LEFT, y); y += 5;
+    doc.setFontSize(10); doc.text( "Bill no: " + billCount + (currentTicket ? "   Ticket #: " + currentTicket : ""), LEFT, y); y += 5;
     doc.setFontSize(8); doc.setFont("helvetica", "normal");
     doc.text("Date : " + dateStr, LEFT, y); doc.text("Time : " + timeStr, RIGHT, y, {align: 'right'}); y += 4;
     doc.text(shift + "", LEFT, y); doc.text("Admin", RIGHT, y, {align: 'right'}); y += 5;
+    const custPhoneVal = (document.getElementById('cust-phone') && document.getElementById('cust-phone').value.trim()) || '';
+    if (custPhoneVal) { doc.text("Customer : " + custPhoneVal, LEFT, y); y += 5; }
 
     // --- Professional Table Header ---
     doc.setLineWidth(0.3);
@@ -959,7 +1097,11 @@ function processPastedJson() {
 
     logSale(g.toFixed(3), billCount); 
     printThermal(doc);
+    if (currentTicket) markTicketUsed(currentTicket);
+    currentTicket = null;
     clearCart(); closeM();
+    document.getElementById('ticketBadge').innerText = '🎫 --';
+    showTicketPage();
 }
 
 function printThermal(doc) {
@@ -1122,25 +1264,26 @@ function updateCartUI(rebuildList = true) {
 
         if (rebuildList) {
             list.innerHTML += `
-                <div class="cart-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #f1f5f9;">
-                    <div style="flex:1;">
-                        <b style="font-size:14px; color:#1e293b;">${item.name}</b><br>
-                        <small style="color:#64748b;">${item.price.toFixed(3)}</small>
+                <div class="cart-item" style="padding:10px; border-bottom:1px solid #f1f5f9;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                        <b style="font-size:14px; color:#1e293b; word-break:break-word; overflow-wrap:break-word; flex:1; min-width:0;">${item.name}</b>
                     </div>
-                    
-                    <div class="qty-box" style="display:flex; align-items:center; gap:8px;">
-                        <button class="q-btn q-minus" onclick="changeQty(${idx}, -1)" style="background:#ef4444; color:white; border:none; border-radius:4px; width:24px;">-</button>
-                        
-                        <input type="number" 
-                               id="qty-input-${idx}" 
-                               value="${item.qty}" 
-                               step="0.001" 
-                               oninput="manualQty(${idx}, this.value)" 
-                               style="width:50px; text-align:center; border:1px solid #e2e8f0; border-radius:6px; font-weight:bold; padding:2px;">
-                        
-                        <button class="q-btn q-plus" onclick="changeQty(${idx}, 1)" style="background:#10b981; color:white; border:none; border-radius:4px; width:24px;">+</button>
-                        
-                        <b style="min-width:70px; text-align:right; color:#1e293b;" id="row-total-${idx}">${itemTotal.toFixed(3)}</b>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; gap:8px;">
+                        <small style="color:#64748b; flex-shrink:0;">${item.price.toFixed(3)}</small>
+                        <div class="qty-box" style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                            <button class="q-btn q-minus" onclick="changeQty(${idx}, -1)" style="background:#ef4444; color:white; border:none; border-radius:4px; width:24px;">-</button>
+
+                            <input type="number"
+                                   id="qty-input-${idx}"
+                                   value="${item.qty}"
+                                   step="0.001"
+                                   oninput="manualQty(${idx}, this.value)"
+                                   style="width:50px; text-align:center; border:1px solid #e2e8f0; border-radius:6px; font-weight:bold; padding:2px;">
+
+                            <button class="q-btn q-plus" onclick="changeQty(${idx}, 1)" style="background:#10b981; color:white; border:none; border-radius:4px; width:24px;">+</button>
+
+                            <b style="min-width:70px; text-align:right; color:#1e293b;" id="row-total-${idx}">${itemTotal.toFixed(3)}</b>
+                        </div>
                     </div>
                 </div>`;
         } else {
@@ -1163,6 +1306,7 @@ function updateCartUI(rebuildList = true) {
     document.getElementById('grand-total').innerText = g.toFixed(3);
     document.getElementById('vat-total').innerText = vt.toFixed(3);
     document.getElementById('cart-count').innerText = `${cart.reduce((a,b)=>parseFloat(a)+parseFloat(b.qty),0)} ITEMS`;
+    persistTicketCart();
 }
 
     function changeQty(i, d) { cart[i].qty += d; if (cart[i].qty < 1) cart.splice(i, 1); updateCartUI(); }
@@ -1285,7 +1429,7 @@ function updateCartUI(rebuildList = true) {
         document.getElementById('itemRemoveBtn').style.display = 'none';
     }
     // ===================================
-    function clearCart() { cart = []; updateCartUI(); if(location.hash === '#cart') history.back(); }
+    function clearCart() { cart = []; const phoneEl = document.getElementById('cust-phone'); if (phoneEl) phoneEl.value = ''; updateCartUI(); if(location.hash === '#cart') history.back(); }
     
     
     
@@ -1380,16 +1524,18 @@ function showIndividualBills(dateKey, displayLabel) {
     let totalTransfer = 0;
     let totalAtm = 0;
     let totalCash = 0;
+    let totalPending = 0;
 
     filteredBills.forEach(b => {
         let amt = parseFloat(b.amount) || 0;
-        let method = (b.method || 'Transfer').toLowerCase();
+        let method = (b.method || '').toLowerCase();
         if (method === 'atm') totalAtm += amt;
         else if (method === 'cash') totalCash += amt;
-        else totalTransfer += amt;
+        else if (method === 'transfer') totalTransfer += amt;
+        else totalPending += amt;
     });
 
-    let grandTotal = totalTransfer + totalAtm + totalCash;
+    let grandTotal = totalTransfer + totalAtm + totalCash + totalPending;
 
     // SUMMARY CARDS (With Cash Category)
     let summaryHtml = `
@@ -1399,7 +1545,7 @@ function showIndividualBills(dateKey, displayLabel) {
                 <div style="font-size: 22px; font-weight: 900;">${grandTotal.toFixed(3)} <span style="font-size: 12px; opacity: 0.7;">OMR</span></div>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px;">
                 <div style="background: #f0fdf4; border: 1px solid #dcfce7; padding: 8px 4px; border-radius: 10px; text-align: center;">
                     <small style="color: #166534; font-weight: 800; font-size: 8px;">🏦 TRANS</small>
                     <div style="font-size: 13px; font-weight: 700; color: #14532d;">${totalTransfer.toFixed(3)}</div>
@@ -1412,6 +1558,10 @@ function showIndividualBills(dateKey, displayLabel) {
                     <small style="color: #92400e; font-weight: 800; font-size: 8px;">💵 CASH</small>
                     <div style="font-size: 13px; font-weight: 700; color: #78350f;">${totalCash.toFixed(3)}</div>
                 </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 4px; border-radius: 10px; text-align: center;">
+                    <small style="color: #475569; font-weight: 800; font-size: 8px;">⏳ PENDING</small>
+                    <div style="font-size: 13px; font-weight: 700; color: #334155;">${totalPending.toFixed(3)}</div>
+                </div>
             </div>
         </div>
         <div style="height: 1px; background: #f1f5f9; margin-bottom: 15px;"></div>
@@ -1423,14 +1573,17 @@ function showIndividualBills(dateKey, displayLabel) {
         container.innerHTML += `<div style="text-align:center; padding:50px 20px; color: #94a3b8;">No records found.</div>`;
     } else {
         filteredBills.forEach((b, index) => {
-            let pMethod = b.method || 'Transfer'; 
+            let pMethod = b.method || ''; 
             let lowerMethod = pMethod.toLowerCase();
             
             // Icon & Color Logic
-            let methodIcon = '🏦';
-            let themeColor = '#16a34a'; // Green for Transfer
+            let methodIcon = '⏳';
+            let themeColor = '#64748b'; // Grey for Pending
             
-            if (lowerMethod === 'atm') {
+            if (lowerMethod === 'transfer') {
+                methodIcon = '🏦';
+                themeColor = '#16a34a'; // Green for Transfer
+            } else if (lowerMethod === 'atm') {
                 methodIcon = '💳';
                 themeColor = '#0284c7'; // Blue for ATM
             } else if (lowerMethod === 'cash') {
@@ -1456,6 +1609,7 @@ function showIndividualBills(dateKey, displayLabel) {
                             
                             <select onchange="updateMethodDropdown('${b.billNo}', this.value, '${dateKey}', '${displayLabel}')" 
                                     style="border:1px solid #e2e8f0; background:#f8fafc; color:#475569; font-size:10px; padding:1px 4px; border-radius:6px; font-weight:bold; outline:none;">
+                                <option value="" ${!lowerMethod ? 'selected' : ''}>⏳ Pending</option>
                                 <option value="Transfer" ${lowerMethod === 'transfer' ? 'selected' : ''}>🏦 Transfer</option>
                                 <option value="ATM" ${lowerMethod === 'atm' ? 'selected' : ''}>💳 ATM Card</option>
                                 <option value="Cash" ${lowerMethod === 'cash' ? 'selected' : ''}>💵 Cash</option>
@@ -1489,17 +1643,20 @@ function updateMethodDropdown(billNo, newMethod, dateKey, label) {
     if (idx !== -1) {
         sales[idx].method = newMethod;
         localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
+        setTicketMethodState(sales[idx].ticketNo, dateKey, newMethod);
         // Refresh the list to update totals and icons
         showIndividualBills(dateKey, label);
     }
 }
 
 // ===== BILL DELETE FUNCTION =====
-function deleteBill(billNo, dateKey, displayLabel) {
+function deleteBillOld_unused(billNo, dateKey, displayLabel) {
     if (!confirm(`Bill ${billNo} delete karna chahte hain? Yeh wapas nahi aayega!`)) return;
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    let target = sales.find(s => String(s.billNo) === String(billNo) && s.date === dateKey);
     sales = sales.filter(s => String(s.billNo) !== String(billNo));
     localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
+    if (target) releaseTicketIfSameDay(target.ticketNo, dateKey);
     showIndividualBills(dateKey, displayLabel);
     showReports();
 }
@@ -1526,7 +1683,10 @@ function openEditBillModal(billNo, dateKey, displayLabel) {
     document.getElementById('editDelivery').value = parseFloat(bill.deliveryCharges) || 0;
 
     // Payment method
-    setEditMethod(bill.method || 'Transfer');
+    setEditMethod(bill.method || '');
+
+    // Customer phone
+    document.getElementById('editCustPhone').value = bill.customerPhone || '';
 
     // Items render karein
     renderEditItems();
@@ -1549,20 +1709,22 @@ function renderEditItems() {
     editCartItems.forEach((item, idx) => {
         let itemTotal = (parseFloat(item.price) * parseFloat(item.qty)).toFixed(3);
         list.innerHTML += `
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f1f5f9;">
-                <div style="flex:1;">
-                    <b style="font-size:14px; color:#1e293b;">${item.name}</b><br>
-                    <small style="color:#64748b;">${parseFloat(item.price).toFixed(3)} OMR each</small>
+            <div style="padding:12px 0; border-bottom:1px solid #f1f5f9;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                    <b style="font-size:14px; color:#1e293b; word-break:break-word; overflow-wrap:break-word; flex:1; min-width:0;">${item.name}</b>
                 </div>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <button onclick="editQtyChange(${idx}, -1)"
-                            style="background:#ef4444; color:white; border:none; border-radius:6px; width:28px; height:28px; font-size:16px; font-weight:bold; cursor:pointer;">−</button>
-                    <input type="number" id="editQty-${idx}" value="${parseFloat(item.qty)}" step="0.001" min="0"
-                           oninput="editQtyManual(${idx}, this.value)"
-                           style="width:54px; text-align:center; border:1px solid #e2e8f0; border-radius:6px; font-weight:bold; padding:4px; font-size:13px;">
-                    <button onclick="editQtyChange(${idx}, 1)"
-                            style="background:#10b981; color:white; border:none; border-radius:6px; width:28px; height:28px; font-size:16px; font-weight:bold; cursor:pointer;">+</button>
-                    <b style="min-width:58px; text-align:right; color:#1e293b; font-size:13px;" id="editRowTotal-${idx}">${itemTotal}</b>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px; gap:8px;">
+                    <small style="color:#64748b; flex-shrink:0;">${parseFloat(item.price).toFixed(3)} OMR each</small>
+                    <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                        <button onclick="editQtyChange(${idx}, -1)"
+                                style="background:#ef4444; color:white; border:none; border-radius:6px; width:28px; height:28px; font-size:16px; font-weight:bold; cursor:pointer;">−</button>
+                        <input type="number" id="editQty-${idx}" value="${parseFloat(item.qty)}" step="0.001" min="0"
+                               oninput="editQtyManual(${idx}, this.value)"
+                               style="width:54px; text-align:center; border:1px solid #e2e8f0; border-radius:6px; font-weight:bold; padding:4px; font-size:13px;">
+                        <button onclick="editQtyChange(${idx}, 1)"
+                                style="background:#10b981; color:white; border:none; border-radius:6px; width:28px; height:28px; font-size:16px; font-weight:bold; cursor:pointer;">+</button>
+                        <b style="min-width:58px; text-align:right; color:#1e293b; font-size:13px;" id="editRowTotal-${idx}">${itemTotal}</b>
+                    </div>
                 </div>
             </div>`;
     });
@@ -1611,6 +1773,7 @@ function recalcEditTotals() {
 function setEditMethod(method) {
     document.getElementById('editSelectedMethod').value = method;
     const labels = {
+        '': document.getElementById('editLbl-p'),
         'Transfer': document.getElementById('editLbl-t'),
         'ATM': document.getElementById('editLbl-a'),
         'Cash': document.getElementById('editLbl-c')
@@ -1620,7 +1783,7 @@ function setEditMethod(method) {
         labels[key].style.background = '#fff';
         labels[key].querySelector('span:last-child').style.color = '#64748b';
     }
-    let active = labels[method];
+    let active = labels[method] || labels[''];
     if (active) {
         active.style.border = '1.5px solid #00C7C7';
         active.style.background = '#f0fdfa';
@@ -1636,6 +1799,7 @@ function saveEditedBill() {
     let discount = parseFloat(document.getElementById('editDiscount').value) || 0;
     let delivery = parseFloat(document.getElementById('editDelivery').value) || 0;
     let method = document.getElementById('editSelectedMethod').value;
+    let custPhone = (document.getElementById('editCustPhone').value || '').trim();
 
     // Grand total recalculate
     let sub = editCartItems.reduce((a, b) => a + parseFloat(b.price) * parseFloat(b.qty), 0);
@@ -1651,7 +1815,9 @@ function saveEditedBill() {
         sales[idx].discountPerc = discount;
         sales[idx].deliveryCharges = delivery;
         sales[idx].method = method;
+        sales[idx].customerPhone = custPhone;
         localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
+        setTicketMethodState(sales[idx].ticketNo, dateKey, method);
     }
 
     closeEditBillPanel();
@@ -1876,69 +2042,59 @@ function exportToExcel() {
     let filtered = sales.filter(s => s.date >= start && s.date <= end);
     let totalRev = filtered.reduce((a, b) => a + b.amount, 0).toFixed(3);
 
-    let excelData = "\uFEFF"; 
-    const line = "------------------------------------------------------------------------------------------------------------\n";
-    
-    // Header
-    excelData += line;
-    excelData += "\tASH BAKES - EXECUTIVE FINANCIAL STATEMENT\n";
-    excelData += line + "\n";
-    
-    // --- Store ko ek row upar shift kiya gaya hai ---
-    excelData += `REPORT SUMMARY\t\t\tStore: Ash Bakes Muscat\n`; // Row 1 Right
-    excelData += `Total Revenue: ${totalRev} OMR\t\t\tStatus: Verified\n`; // Row 2 Left & Right
-    excelData += `Date Range: ${start} to ${end}\n`; // Row 3 Left
-    
-    excelData += "\n" + line + "\n";
-    excelData += "TRANSACTION LEDGER DETAILS\n";
-    excelData += line;
-    excelData += "BILL NO\tDATE\tTIME\tTOTAL (OMR)\n";
-    excelData += line;
+    // ---- Real .xlsx workbook (SheetJS) ----
+    let rows = [];
+    rows.push(["ASH BAKES - EXECUTIVE FINANCIAL STATEMENT"]);
+    rows.push([]);
+    rows.push(["REPORT SUMMARY", "", "", "Store: Ash Bakes Muscat"]);
+    rows.push([`Total Revenue: ${totalRev} OMR`, "", "", "Status: Verified"]);
+    rows.push([`Date Range: ${start} to ${end}`]);
+    rows.push([]);
+    rows.push(["TRANSACTION LEDGER DETAILS"]);
+    rows.push(["BILL NO", "TICKET #", "DATE", "TIME", "METHOD", "TOTAL (OMR)"]);
 
     filtered.forEach(s => {
         let bNo = s.billNo || "---";
-        excelData += `${bNo}\t${s.date}\t${s.time}\t${s.amount.toFixed(3)}\n\n`; 
+        let method = s.method ? s.method : "Pending";
+        rows.push([bNo, s.ticketNo || "", s.date, s.time, method, parseFloat(s.amount).toFixed(3)]);
     });
 
-    excelData += line;
-    excelData += "\tEND OF REPORT\n";
+    rows.push([]);
+    rows.push(["", "", "", "", "", "END OF REPORT"]);
 
-    const blob = new Blob([excelData], { type: 'application/vnd.ms-excel' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `ASH_BAKES_REPORT_${start}.xls`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:10}, {wch:10}, {wch:12}, {wch:12}, {wch:12}, {wch:14}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Report");
+    XLSX.writeFile(wb, `ASH_BAKES_REPORT_${start}.xlsx`);
 }
 function logSale(total, bNo) {
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
     const now = new Date();
-    
-    // Payment method check
-    let selectedMethod = "Transfer"; 
-    const methodInput = document.querySelector('input[name="payMethod"]:checked');
-    if(methodInput) {
-        selectedMethod = methodInput.value;
-    }
 
     // Input boxes se discount aur delivery ki value uthayein
     let currentDiscount = parseFloat(document.getElementById('disc-val').value) || 0;
     let currentDelivery = parseFloat(document.getElementById('deliv-val').value) || 0;
 
+    const custPhoneForLog = (document.getElementById('cust-phone') && document.getElementById('cust-phone').value.trim()) || '';
+    const dateKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
     const newSale = {
         billNo: bNo,
-        date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
+        date: dateKey,
         time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit',second: '2-digit', hour12: true }),
         amount: parseFloat(total), 
-        method: selectedMethod, 
+        method: '', // payment method ab Bill Details se assign hoga
         items: JSON.parse(JSON.stringify(cart)),
         // YEH DO LINES ADD KI HAIN DATA SAVE KARNE KE LIYE
         discountPerc: currentDiscount,
-        deliveryCharges: currentDelivery
+        deliveryCharges: currentDelivery,
+        ticketNo: currentTicket || '',
+        customerPhone: custPhoneForLog
     };
 
-    sales.push(newSale);
+    // Agar isi ticket ka aaj ka pending bill (same billNo, method blank) already hai to usko update karo, warna naya add karo
+    let idx = sales.findIndex(s => String(s.billNo) === String(bNo) && s.date === dateKey && !s.method);
+    if (idx !== -1) { sales[idx] = newSale; } else { sales.push(newSale); }
     localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
 }
 
@@ -2044,8 +2200,10 @@ function deleteBill(billNo, dateKey, displayLabel){
   document.getElementById('delBox').style.display='block';
   document.getElementById('delOkBtn').onclick = function(){
     let s = JSON.parse(localStorage.getItem('asb_sales_logs'))||[];
+    let target = s.find(x => String(x.billNo) === String(billNo) && x.date === dateKey);
     s = s.filter(x => !(String(x.billNo) === String(billNo) && x.date === dateKey));
     localStorage.setItem('asb_sales_logs', JSON.stringify(s));
+    if (target) releaseTicketIfSameDay(target.ticketNo, dateKey);
     closeDelModal();
     showIndividualBills(dateKey, displayLabel);
     showReports();
@@ -2109,6 +2267,11 @@ function deleteBill(billNo, dateKey, displayLabel){
         <button onclick="closeEditBillPanel()" style="border:none; background:#f1f5f9; width:40px; height:40px; border-radius:12px; font-size:20px; color:#64748b; cursor:pointer;">×</button>
     </div>
 
+    <!-- Customer Phone -->
+    <div style="padding:0 20px 12px; flex-shrink:0;">
+        <input type="tel" id="editCustPhone" placeholder="📞 Customer Phone Number" style="width:100%; box-sizing:border-box; padding:12px; border-radius:12px; border:1.5px solid #e2e8f0; font-weight:600; outline:none;">
+    </div>
+
     <!-- Items List -->
     <div id="editItemsList" style="flex:1; overflow-y:auto; padding:15px; -webkit-overflow-scrolling:touch;"></div>
 
@@ -2144,17 +2307,22 @@ function deleteBill(billNo, dateKey, displayLabel){
         </div>
 
         <!-- Grand Total -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
-            <span style="font-weight:800; color:#1e293b; font-size:14px;">GRAND TOTAL</span>
-            <span id="editGrandTotal" style="font-size:28px; font-weight:900; color:#00C7C7;">0.000 <small style="font-size:12px;">OMR</small></span>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; flex-wrap:wrap; gap:6px 10px;">
+            <span style="font-weight:800; color:#1e293b; font-size:14px; flex-shrink:0;">GRAND TOTAL</span>
+            <span id="editGrandTotal" style="font-size:24px; font-weight:900; color:#00C7C7; text-align:right; margin-left:auto; white-space:nowrap;">0.000 <small style="font-size:12px;">OMR</small></span>
         </div>
 
         <!-- Payment Method -->
         <div style="display:flex; gap:8px; margin-bottom:18px;">
+            <div onclick="setEditMethod('')" id="editLbl-p"
+                 style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
+                <span style="font-size:16px;">⏳</span><br>
+                <span style="font-size:9px; font-weight:800; color:#64748b;">PENDING</span>
+            </div>
             <div onclick="setEditMethod('Transfer')" id="editLbl-t"
-                 style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #00C7C7; border-radius:12px; text-align:center; background:#f0fdfa;">
+                 style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
                 <span style="font-size:16px;">🏦</span><br>
-                <span style="font-size:9px; font-weight:800; color:#1e293b;">TRANSFER</span>
+                <span style="font-size:9px; font-weight:800; color:#64748b;">TRANSFER</span>
             </div>
             <div onclick="setEditMethod('ATM')" id="editLbl-a"
                  style="flex:1; cursor:pointer; padding:10px; border:1.5px solid #f1f5f9; border-radius:12px; text-align:center; background:#fff;">
@@ -2185,7 +2353,7 @@ function deleteBill(billNo, dateKey, displayLabel){
     <input type="hidden" id="editBillNo">
     <input type="hidden" id="editDateKey">
     <input type="hidden" id="editDisplayLabel">
-    <input type="hidden" id="editSelectedMethod" value="Transfer">
+    <input type="hidden" id="editSelectedMethod" value="">
 </div>
 
 <div id="billDetailsM" class="modal" style="width: 100%; height: 100%; max-height: 100vh; top: 0; left: 0; transform: none; margin: 0; padding: 0; overflow: hidden; z-index: 20000; display: none; border-radius: 0; background: #fff; flex-direction: column;">
