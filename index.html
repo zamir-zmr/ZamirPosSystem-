@@ -927,12 +927,22 @@ function processPastedJson() {
 
     function selectTicket(num) {
         currentTicket = num;
+        // Agar is ticket ka aaj ka pending bill (save/print ho chuka, settle nahi hua) sales log mein maujood hai,
+        // to wahi asli/final data dikhayein (order items + phone). Warna ticket cart (draft) use karein.
+        let pendingBill = getPendingBillForTicket(num);
         let saved = getTicketCart(num);
-        cart = saved ? JSON.parse(JSON.stringify(saved.items || [])) : [];
         const phoneEl = document.getElementById('cust-phone');
-        if (phoneEl) phoneEl.value = saved ? (saved.phone || '') : '';
-        if (document.getElementById('disc-val')) document.getElementById('disc-val').value = saved ? (saved.disc || 0) : 0;
-        if (document.getElementById('deliv-val')) document.getElementById('deliv-val').value = saved ? (saved.deliv || 0) : 0;
+        if (pendingBill) {
+            cart = JSON.parse(JSON.stringify(pendingBill.items || []));
+            if (phoneEl) phoneEl.value = pendingBill.customerPhone || '';
+            if (document.getElementById('disc-val')) document.getElementById('disc-val').value = parseFloat(pendingBill.discountPerc) || 0;
+            if (document.getElementById('deliv-val')) document.getElementById('deliv-val').value = parseFloat(pendingBill.deliveryCharges) || 0;
+        } else {
+            cart = saved ? JSON.parse(JSON.stringify(saved.items || [])) : [];
+            if (phoneEl) phoneEl.value = saved ? (saved.phone || '') : '';
+            if (document.getElementById('disc-val')) document.getElementById('disc-val').value = saved ? (saved.disc || 0) : 0;
+            if (document.getElementById('deliv-val')) document.getElementById('deliv-val').value = saved ? (saved.deliv || 0) : 0;
+        }
         document.getElementById('ticketBadge').innerText = '🎫 #' + num;
         document.getElementById('ticketPage').style.display = 'none';
         toggleCart(false);
@@ -986,9 +996,23 @@ function processPastedJson() {
     const itemRowH = 6; 
     const headH = 105; 
     const footH = 65;
-    const dynH = headH + (cart.length * itemRowH) + footH + 20; 
+    const LEFT = 5, CENTER = 40, RIGHT = 75;
+    const ITEM_COL_WIDTH = 33; // Item column ki max width (Qty column shuru hone se pehle)
+    const LINE_H = 4;          // item name ki har line ki height
+
+    // Item names ko wrap karke line count nikalein (max 3 lines per item) taake page height sahi bane
+    const scratchDoc = new jsPDF({ unit: 'mm', format: [80, 200] });
+    scratchDoc.setFont("helvetica", "normal"); scratchDoc.setFontSize(8);
+    const itemLinesArr = cart.map(item => {
+        let lines = scratchDoc.splitTextToSize(String(item.name), ITEM_COL_WIDTH);
+        if (lines.length > 3) lines = lines.slice(0, 3);
+        return lines;
+    });
+    const itemsTotalHeight = itemLinesArr.reduce((sum, lines) => sum + Math.max(itemRowH, lines.length * LINE_H), 0);
+
+    const dynH = headH + itemsTotalHeight + footH + 20; 
     const doc = new jsPDF({ unit: 'mm', format: [80, dynH] });
-    const LEFT = 5, CENTER = 40, RIGHT = 75; let y = 10;
+    let y = 10;
     
     const now = new Date(); 
     const dateStr = now.toLocaleDateString('en-GB'); 
@@ -1043,14 +1067,15 @@ function processPastedJson() {
 
     // Items Loop
     let sub = 0; let totalQty = 0;
-    doc.setFont("helvetica", "normal");
-    cart.forEach(item => { 
+    doc.setFontSize(8); doc.setFont("helvetica", "normal");
+    cart.forEach((item, idx) => { 
         let it = item.price * item.qty; sub += it; totalQty += item.qty;
-        doc.text(item.name, LEFT, y); 
+        let nameLines = itemLinesArr[idx];
+        nameLines.forEach((ln, i) => { doc.text(ln, LEFT, y + (i * LINE_H)); });
         doc.text(item.qty.toString(), CENTER + 5, y, {align: 'right'}); 
         doc.text(item.price.toFixed(3), CENTER + 18, y, {align: 'right'});
         doc.text(it.toFixed(3), RIGHT, y, {align: 'right'}); 
-        y += itemRowH; 
+        y += Math.max(itemRowH, nameLines.length * LINE_H); 
     });
 
     // Calculations logic
@@ -1079,12 +1104,15 @@ function processPastedJson() {
         y += 5;
     }
 
-    // Grand Total (Highlighted)
+    // Grand Total (Highlighted) — label left side, gap before amount, no overlap with line above
     doc.setLineDashPattern([], 0); // Solid line for total
-    doc.line(RIGHT - 30, y, RIGHT, y); y += 6;
+    doc.line(LEFT, y, RIGHT, y); y += 8;
     doc.setFontSize(14); doc.setFont("helvetica", "bold");
-    doc.text("GTotal:", CENTER, y); 
-    doc.text(g.toFixed(3), RIGHT, y, {align: 'right'}); y += 8;
+    const gLabel = "GTotal";
+    doc.text(gLabel, LEFT, y);
+    const gLabelWidth = doc.getTextWidth(gLabel);
+    doc.text(g.toFixed(3), LEFT + gLabelWidth + 8, y);
+    y += 9;
     
     // Items Count Summary
     doc.setFontSize(10); doc.setLineDashPattern([1, 1], 0);
@@ -1844,10 +1872,23 @@ function reprintBill(billNo, dateKey) {
     const itemRowH = 6; 
     const headH = 105; 
     const footH = 85; 
-    const dynH = headH + (b.items.length * itemRowH) + footH + 20; 
+    const LEFT = 5, CENTER = 40, RIGHT = 75;
+    const ITEM_COL_WIDTH = 33; // Item column ki max width (Qty column shuru hone se pehle)
+    const LINE_H = 4;          // item name ki har line ki height
+
+    // Item names ko wrap karke line count nikalein (max 3 lines per item) taake page height sahi bane
+    const scratchDoc = new jsPDF({ unit: 'mm', format: [80, 200] });
+    scratchDoc.setFont("helvetica", "normal"); scratchDoc.setFontSize(8);
+    const itemLinesArr = b.items.map(item => {
+        let lines = scratchDoc.splitTextToSize(String(item.name), ITEM_COL_WIDTH);
+        if (lines.length > 3) lines = lines.slice(0, 3);
+        return lines;
+    });
+    const itemsTotalHeight = itemLinesArr.reduce((sum, lines) => sum + Math.max(itemRowH, lines.length * LINE_H), 0);
+
+    const dynH = headH + itemsTotalHeight + footH + 20; 
     
     const doc = new jsPDF({ unit: 'mm', format: [80, dynH] });
-    const LEFT = 5, CENTER = 40, RIGHT = 75; 
     let y = 10;
 
     // 1. Logo
@@ -1881,6 +1922,10 @@ function reprintBill(billNo, dateKey) {
     doc.text("Admin", RIGHT, y, {align: 'right'}); y += 5;
     // ------------------------------------------
 
+    // Customer phone (agar bill mein saved hai)
+    const custPhoneVal = b.customerPhone || '';
+    if (custPhoneVal) { doc.text("Customer : " + custPhoneVal, LEFT, y); y += 5; }
+
     // 4. Table Header
     doc.setLineWidth(0.3); doc.setLineDashPattern([1, 1], 0);
     doc.line(LEFT, y, RIGHT, y); y += 4;
@@ -1893,17 +1938,18 @@ function reprintBill(billNo, dateKey) {
 
     // 5. Items Loop & Sub-Total
     let subTotal = 0; let totalQty = 0;
-    doc.setFont("helvetica", "normal");
-    b.items.forEach(item => { 
+    doc.setFontSize(8); doc.setFont("helvetica", "normal");
+    b.items.forEach((item, idx) => { 
         let q = parseFloat(item.qty) || 0;
         let p = parseFloat(item.price) || 0;
         let itTotal = q * p; 
         subTotal += itTotal; totalQty += q;
-        doc.text(item.name, LEFT, y); 
+        let nameLines = itemLinesArr[idx];
+        nameLines.forEach((ln, i) => { doc.text(ln, LEFT, y + (i * LINE_H)); });
         doc.text(q.toString(), CENTER + 5, y, {align: 'right'}); 
         doc.text(p.toFixed(3), CENTER + 18, y, {align: 'right'});
         doc.text(itTotal.toFixed(3), RIGHT, y, {align: 'right'}); 
-        y += itemRowH; 
+        y += Math.max(itemRowH, nameLines.length * LINE_H); 
     });
 
     y += 2; doc.line(LEFT, y, RIGHT, y); y += 5;
@@ -1931,12 +1977,15 @@ function reprintBill(billNo, dateKey) {
         doc.text(dlv.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
     }
 
-    // 7. Grand Total
+    // 7. Grand Total — label left side, gap before amount, no overlap with line above
     doc.setLineDashPattern([], 0); 
-    doc.line(RIGHT - 30, y, RIGHT, y); y += 6;
+    doc.line(LEFT, y, RIGHT, y); y += 8;
     doc.setFontSize(14); doc.setFont("helvetica", "bold");
-    doc.text("GTotal:", CENTER, y); 
-    doc.text(parseFloat(b.amount).toFixed(3), RIGHT, y, {align: 'right'}); y += 8;
+    const gLabel = "GTotal";
+    doc.text(gLabel, LEFT, y);
+    const gLabelWidth = doc.getTextWidth(gLabel);
+    doc.text(parseFloat(b.amount).toFixed(3), LEFT + gLabelWidth + 8, y);
+    y += 9;
     
     // 8. Footer
     doc.setFontSize(10); doc.setLineDashPattern([1, 1], 0);
