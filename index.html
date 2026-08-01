@@ -1707,7 +1707,7 @@ function renderTopSelling(filter){
     listEl.innerHTML = itemsArr.map((item, idx) => {
         const pct = Math.max(Math.round((item.qty / maxQty) * 100), 6);
         return `
-        <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:2px 4px; margin-bottom:0px;">
             <div style="width:28px; height:28px; border-radius:50%; background:#eff6ff; color:#1d4ed8; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${idx+1}</div>
             <div style="flex:1; min-width:0;">
                 <div style="font-weight:800; font-size:13px; color:#1e293b; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
