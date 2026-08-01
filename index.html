@@ -345,6 +345,9 @@
     <!-- Naya Paste JSON Text Button -->
     <button class="btn" style="background:#059669; width:100%; margin-bottom:10px" onclick="openJsonPasteModal()">📋 PASTE JSON TEXT</button>
 
+    <!-- ===== Security Password (Bill Delete Protection) ===== -->
+    <button class="btn" style="background:#0f172a; width:100%; margin-bottom:10px" onclick="openPwManageModal()">🔒 SECURITY PASSWORD</button>
+
     <button class="btn" style="width:100%; background:var(--slate)" onclick="closeM()">CLOSE</button>
 </div>
 
@@ -362,7 +365,7 @@
 <!-- Updated Custom Alert Modal with Dynamic Action Buttons -->
 
 <!-- Fully Detailed Custom Alert Modal -->
-<div class="modal" id="appAlertM" style="display:none; text-align:left; max-width:90%; width:380px;">
+<div class="modal" id="appAlertM" style="display:none; text-align:left; max-width:90%; width:380px; z-index:200000 !important;">
     <h3 id="appAlertTitle" style="margin-bottom:12px; font-size: 1.2rem; font-weight:700;">Notification</h3>
     
     <!-- Detailed Items Summary Box -->
@@ -2243,19 +2246,146 @@ function closeDelModal(){
   document.getElementById('delOv').style.display='none';
   document.getElementById('delBox').style.display='none';
 }
+function getSecurityPassword(){ return localStorage.getItem('asb_delete_password') || ''; }
+
+// ===== Security Password Manager (Create / Change / Delete) =====
+let _pwStepMode = null; // 'create' | 'changeOld' | 'changeNew' | 'delete'
+
+function refreshPwManagerUI(){
+  const cur = getSecurityPassword();
+  const statusEl = document.getElementById('pwMgrStatus');
+  const createBtn = document.getElementById('pwMgrCreateBtn');
+  const changeBtn = document.getElementById('pwMgrChangeBtn');
+  const deleteBtn = document.getElementById('pwMgrDeleteBtn');
+  if (cur) {
+    if (statusEl) statusEl.innerText = '🔒 Password is currently SET';
+    if (createBtn) { createBtn.innerText = '✅ Created Password'; createBtn.style.opacity = '0.55'; createBtn.style.cursor = 'default'; createBtn.onclick = null; }
+    if (changeBtn) changeBtn.style.display = 'block';
+    if (deleteBtn) deleteBtn.style.display = 'block';
+  } else {
+    if (statusEl) statusEl.innerText = '🔓 No password set';
+    if (createBtn) { createBtn.innerText = '➕ Create Password'; createBtn.style.opacity = '1'; createBtn.style.cursor = 'pointer'; createBtn.onclick = startCreatePassword; }
+    if (changeBtn) changeBtn.style.display = 'none';
+    if (deleteBtn) deleteBtn.style.display = 'none';
+  }
+}
+
+function openPwManageModal(){
+  closeM();
+  refreshPwManagerUI();
+  document.getElementById('pwMgrOv').style.display = 'block';
+  document.getElementById('pwMgrBox').style.display = 'block';
+}
+function closePwManager(){
+  document.getElementById('pwMgrOv').style.display = 'none';
+  document.getElementById('pwMgrBox').style.display = 'none';
+}
+
+function openPwStep(mode, title, sub, btnLabel, icon){
+  _pwStepMode = mode;
+  document.getElementById('pwStepIcon').innerText = icon || '🔑';
+  document.getElementById('pwStepTitle').innerText = title;
+  document.getElementById('pwStepSub').innerText = sub;
+  document.getElementById('pwStepBtn').innerText = btnLabel;
+  document.getElementById('pwStepInput').value = '';
+  document.getElementById('pwStepOv').style.display = 'block';
+  document.getElementById('pwStepBox').style.display = 'block';
+  setTimeout(() => { const el = document.getElementById('pwStepInput'); if (el) el.focus(); }, 50);
+}
+function closePwStep(){
+  document.getElementById('pwStepOv').style.display = 'none';
+  document.getElementById('pwStepBox').style.display = 'none';
+  document.getElementById('pwStepInput').value = '';
+  _pwStepMode = null;
+}
+
+function startCreatePassword(){
+  closePwManager();
+  openPwStep('create', 'Create Password', 'Naya security password set karein', '✅ Save', '➕');
+}
+function startChangePassword(){
+  closePwManager();
+  openPwStep('changeOld', 'Change Password', 'Pehle apna current password enter karein', '➡️ Next', '🔑');
+}
+function startDeletePassword(){
+  closePwManager();
+  openPwStep('delete', 'Delete Password', 'Confirm karne ke liye current password enter karein', '🗑️ Delete', '🗑️');
+}
+
+function submitPwStep(){
+  const val = document.getElementById('pwStepInput').value;
+  const saved = getSecurityPassword();
+
+  if (_pwStepMode === 'create') {
+    if (!val.trim()) { showAppAlert('⚠️ Required', 'Please enter a password'); return; }
+    localStorage.setItem('asb_delete_password', val);
+    closePwStep();
+    showAppAlert('✅ Success', 'Password created successfully');
+  }
+  else if (_pwStepMode === 'changeOld') {
+    if (val !== saved) { showAppAlert('❌ Incorrect Password', 'Old password galat hai'); return; }
+    closePwStep();
+    openPwStep('changeNew', 'Change Password', 'Ab naya password enter karein', '✅ Save', '🔑');
+  }
+  else if (_pwStepMode === 'changeNew') {
+    if (!val.trim()) { showAppAlert('⚠️ Required', 'Please enter a new password'); return; }
+    localStorage.setItem('asb_delete_password', val);
+    closePwStep();
+    showAppAlert('✅ Success', 'Password changed successfully');
+  }
+  else if (_pwStepMode === 'delete') {
+    if (val !== saved) { showAppAlert('❌ Incorrect Password', 'Password galat hai'); return; }
+    localStorage.removeItem('asb_delete_password');
+    closePwStep();
+    showAppAlert('🗑️ Removed', 'Password removed successfully');
+  }
+}
+
+let _pendingDeleteAction = null;
+
+function closePwPromptModal(){
+  document.getElementById('pwOv').style.display = 'none';
+  document.getElementById('pwBox').style.display = 'none';
+  document.getElementById('pwPromptInput').value = '';
+  _pendingDeleteAction = null;
+}
+
+function submitDeletePassword(){
+  const entered = document.getElementById('pwPromptInput').value;
+  const saved = getSecurityPassword();
+  if (entered === saved) {
+    const action = _pendingDeleteAction;
+    closePwPromptModal();
+    if (action) action();
+  } else {
+    showAppAlert('❌ Incorrect Password', 'Aapne jo password dala hai wo sahi nahi hai');
+  }
+}
+
 function deleteBill(billNo, dateKey, displayLabel){
   document.getElementById('delTitle').innerText = `Bill ${billNo} Delete?`;
   document.getElementById('delOv').style.display='block';
   document.getElementById('delBox').style.display='block';
   document.getElementById('delOkBtn').onclick = function(){
-    let s = JSON.parse(localStorage.getItem('asb_sales_logs'))||[];
-    let target = s.find(x => String(x.billNo) === String(billNo) && x.date === dateKey);
-    s = s.filter(x => !(String(x.billNo) === String(billNo) && x.date === dateKey));
-    localStorage.setItem('asb_sales_logs', JSON.stringify(s));
-    if (target) releaseTicketIfSameDay(target.ticketNo, dateKey);
+    const performDelete = function(){
+      let s = JSON.parse(localStorage.getItem('asb_sales_logs'))||[];
+      let target = s.find(x => String(x.billNo) === String(billNo) && x.date === dateKey);
+      s = s.filter(x => !(String(x.billNo) === String(billNo) && x.date === dateKey));
+      localStorage.setItem('asb_sales_logs', JSON.stringify(s));
+      if (target) releaseTicketIfSameDay(target.ticketNo, dateKey);
+      showIndividualBills(dateKey, displayLabel);
+      showReports();
+    };
     closeDelModal();
-    showIndividualBills(dateKey, displayLabel);
-    showReports();
+    const savedPw = getSecurityPassword();
+    if (savedPw) {
+      _pendingDeleteAction = performDelete;
+      document.getElementById('pwOv').style.display='block';
+      document.getElementById('pwBox').style.display='block';
+      setTimeout(() => { const el = document.getElementById('pwPromptInput'); if (el) el.focus(); }, 50);
+    } else {
+      performDelete();
+    }
   };
 }
     
@@ -2434,6 +2564,46 @@ function deleteBill(billNo, dateKey, displayLabel){
 </div>
 
 
+
+<div id="pwOv" onclick="closePwPromptModal()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;backdrop-filter:blur(4px);"></div>
+<div id="pwBox" style="display:none;position:fixed;z-index:100001;top:50%;left:50%;transform:translate(-50%,-50%);width:50%;max-width:320px;background:#fff;border-radius:20px;padding:18px;box-shadow:0 8px 40px rgba(0,0,0,0.25);">
+  <div style="text-align:center;font-size:36px;margin-bottom:8px;">🔒</div>
+  <h3 style="text-align:center;margin:0 0 6px;font-size:18px;color:#1e293b;font-weight:800;">Enter Security Password</h3>
+  <p style="text-align:center;color:#94a3b8;font-size:12px;margin:0 0 16px;line-height:1.5;">Bill delete karne ke liye password enter karein</p>
+  <input type="password" id="pwPromptInput" placeholder="Password" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid #e2e8f0;margin-bottom:12px;font-size:15px;box-sizing:border-box;" onkeydown="if(event.key==='Enter'){ submitDeletePassword(); }">
+  <button id="pwSubmitBtn" onclick="submitDeletePassword()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">✅ Confirm</button>
+  <button onclick="closePwPromptModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+</div>
+
+<!-- Security Password Manager (Create / Change / Delete) — Full Screen Layout -->
+<div id="pwMgrOv" onclick="closePwManager()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;"></div>
+<div id="pwMgrBox" style="display:none;position:fixed;z-index:100001;inset:0;width:100%;height:100%;background:#fff;box-shadow:none;overflow-y:auto;padding:0;">
+  <div style="max-width:480px;margin:0 auto;padding:40px 24px 32px;min-height:100%;box-sizing:border-box;display:flex;flex-direction:column;">
+    <div style="text-align:center;font-size:64px;margin-bottom:10px;">🔐</div>
+    <h3 style="text-align:center;margin:0 0 6px;font-size:28px;color:#0f172a;font-weight:800;">Security Password</h3>
+    <p id="pwMgrStatus" style="text-align:center;color:#94a3b8;font-size:15px;margin:0 0 36px;">🔓 No password set</p>
+
+    <button id="pwMgrCreateBtn" style="width:100%;text-align:left;background:#ecfdf5;border:2px solid #10b981;color:#047857;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:16px;" onclick="startCreatePassword()">➕ Create Password</button>
+
+    <button id="pwMgrChangeBtn" style="width:100%;text-align:left;background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:16px;display:none;" onclick="startChangePassword()">✏️ Change Password</button>
+
+    <button id="pwMgrDeleteBtn" style="width:100%;text-align:left;background:#fef2f2;border:2px solid #ef4444;color:#b91c1c;padding:22px 20px;border-radius:18px;font-size:18px;font-weight:800;cursor:pointer;margin-bottom:28px;display:none;" onclick="startDeletePassword()">🗑️ Delete Password</button>
+
+    <div style="flex:1;"></div>
+    <button onclick="closePwManager()" style="width:100%;background:#f8fafc;color:#64748b;border:2px solid #e2e8f0;padding:18px;border-radius:18px;font-size:16px;font-weight:700;cursor:pointer;">↩️ Close</button>
+  </div>
+</div>
+
+<!-- Single-step password input (used for create / old-password / new-password / delete-confirm) -->
+<div id="pwStepOv" onclick="closePwStep()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:100002;backdrop-filter:blur(4px);"></div>
+<div id="pwStepBox" style="display:none;position:fixed;z-index:100003;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:340px;background:#fff;border-radius:24px;padding:28px 24px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
+  <div id="pwStepIcon" style="text-align:center;font-size:42px;margin-bottom:8px;">🔑</div>
+  <h3 id="pwStepTitle" style="text-align:center;margin:0 0 6px;font-size:20px;color:#0f172a;font-weight:800;">Enter Password</h3>
+  <p id="pwStepSub" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 20px;line-height:1.5;"></p>
+  <input type="password" id="pwStepInput" placeholder="Password" style="width:100%;padding:15px;border-radius:14px;border:1.5px solid #e2e8f0;margin-bottom:16px;font-size:16px;box-sizing:border-box;" onkeydown="if(event.key==='Enter'){ submitPwStep(); }">
+  <button id="pwStepBtn" onclick="submitPwStep()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:16px;border-radius:16px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:12px;">✅ Continue</button>
+  <button onclick="closePwStep()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:14px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+</div>
 
 </body>
 </html>
