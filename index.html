@@ -1244,7 +1244,7 @@ function printThermal(doc) {
                 } else {
                     itemMedia = '';
                 }
-                d.innerHTML = `${itemMedia}<span class="cat-badge">${i.cat}</span><b>${i.name}</b><br><b style="color:var(--a)">${i.price.toFixed(3)}</b>${(localStorage.getItem('asb_show_home_qty') === '1' && i.stock !== null && i.stock !== undefined) ? `<br><small style="color:#94a3b8;font-weight:700;">Qty: ${i.stock}</small>` : ''}`; 
+                d.innerHTML = `${itemMedia}<span class="cat-badge">${i.cat}</span><b>${i.name}</b><br><b style="color:var(--a)">${i.price.toFixed(3)}</b>${(localStorage.getItem('asb_show_home_qty') === '1' && i.stock !== null && i.stock !== undefined) ? `<br><small style="color:#bad500;font-weight:700;">Item Qty: ${i.stock}</small>` : ''}`; 
                 d.onclick = () => { if(isMulti){ selSet.has(i.id) ? selSet.delete(i.id) : selSet.add(i.id); updateBar(); render(); } else addToCart(i); }; 
                 c.appendChild(d); 
             }); 
