@@ -1485,6 +1485,8 @@ function updateCartUI(rebuildList = true) {
                     <div style="font-weight:800; font-size:13px; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${i.name}</div>
                     <div style="font-size:11px; color:#64748b;">${i.cat} • Qty: ${(i.stock===null || i.stock===undefined) ? 0 : i.stock}</div>
                 </div>
+                <button onclick="requestPwThenRun(()=>openEditQtyModal(${i.id}))" style="background:#eff6ff; color:#1d4ed8; border:none; width:34px; height:34px; border-radius:9px; font-size:14px; cursor:pointer; flex-shrink:0;">✏️</button>
+                <button onclick="requestPwThenRun(()=>deleteItemFromManage(${i.id}))" style="background:#fef2f2; color:#b91c1c; border:none; width:34px; height:34px; border-radius:9px; font-size:14px; cursor:pointer; flex-shrink:0;">🗑️</button>
             </div>
         `).join('');
     }
@@ -1636,9 +1638,9 @@ function updateCartUI(rebuildList = true) {
             let inRange = sales.filter(s => s.date >= startKey && s.date <= endKey);
             let rows = [];
             inRange.forEach(s => {
-                (s.items || []).forEach(it => {
+                (s.items || []).forEach((it, iIdx) => {
                     if (q && !it.name.toLowerCase().includes(q)) return;
-                    rows.push({ name: it.name, qty: it.qty, date: s.date, time: s.time, billNo: s.billNo });
+                    rows.push({ name: it.name, qty: it.qty, date: s.date, time: s.time, billNo: s.billNo, itemIndex: iIdx });
                 });
             });
             rows.sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
@@ -1650,7 +1652,9 @@ function updateCartUI(rebuildList = true) {
                         <div style="font-weight:800; font-size:12.5px; color:#1e293b;">${r.name}</div>
                         <div style="font-size:10.5px; color:#64748b;">Bill #${r.billNo} • ${r.date} ${r.time}</div>
                     </div>
-                    <div style="font-weight:800; font-size:13px; color:#b91c1c;">-${r.qty}</div>
+                    <div style="font-weight:800; font-size:13px; color:#b91c1c; margin-right:4px;">-${r.qty}</div>
+                    <button onclick="requestPwThenRun(()=>editInvSaleItem('${r.billNo}','${r.date}',${r.itemIndex}))" style="background:#eff6ff; color:#1d4ed8; border:none; width:30px; height:30px; border-radius:8px; font-size:13px; cursor:pointer; flex-shrink:0;">✏️</button>
+                    <button onclick="requestPwThenRun(()=>deleteInvSaleItem('${r.billNo}','${r.date}',${r.itemIndex}))" style="background:#fef2f2; color:#b91c1c; border:none; width:30px; height:30px; border-radius:8px; font-size:13px; cursor:pointer; flex-shrink:0;">🗑️</button>
                 </div>
             `).join('');
         } else {
@@ -1671,9 +1675,129 @@ function updateCartUI(rebuildList = true) {
                         <div style="font-weight:800; font-size:12.5px; color:#1e293b;">${r.itemName}</div>
                         <div style="font-size:10.5px; color:#64748b;">${r.date} ${r.time || ''} • New Qty: ${r.newStock}</div>
                     </div>
-                    <div style="font-weight:800; font-size:13px; color:${color};">${sign}${r.qty}</div>
+                    <div style="font-weight:800; font-size:13px; color:${color}; margin-right:4px;">${sign}${r.qty}</div>
+                    <button onclick="requestPwThenRun(()=>editInvLogEntry('${tab}',${r.id}))" style="background:#eff6ff; color:#1d4ed8; border:none; width:30px; height:30px; border-radius:8px; font-size:13px; cursor:pointer; flex-shrink:0;">✏️</button>
+                    <button onclick="requestPwThenRun(()=>deleteInvLogEntry('${tab}',${r.id}))" style="background:#fef2f2; color:#b91c1c; border:none; width:30px; height:30px; border-radius:8px; font-size:13px; cursor:pointer; flex-shrink:0;">🗑️</button>
                 </div>
             `).join('');
+        }
+    }
+
+    // ===== Shared password gate for edit/delete actions =====
+    function requestPwThenRun(actionFn) {
+        const savedPw = getSecurityPassword();
+        if (savedPw) {
+            _pendingDeleteAction = actionFn;
+            document.getElementById('pwOv').style.display = 'block';
+            document.getElementById('pwBox').style.display = 'block';
+            setTimeout(() => { const el = document.getElementById('pwPromptInput'); if (el) el.focus(); }, 50);
+        } else {
+            actionFn();
+        }
+    }
+
+    // ===== Add/Waste log entry edit & delete =====
+    function deleteInvLogEntry(tab, logId) {
+        const logKey = tab === 'add' ? 'asb_stock_add_log' : 'asb_waste_log';
+        let log = JSON.parse(localStorage.getItem(logKey)) || [];
+        let entry = log.find(x => x.id === logId);
+        if (!entry) return;
+        let i = menu.find(x => x.name.toLowerCase() === entry.itemName.toLowerCase());
+        if (i && i.stock !== null && i.stock !== undefined) {
+            i.stock = Math.max(0, i.stock + (tab === 'add' ? -entry.qty : entry.qty));
+        }
+        log = log.filter(x => x.id !== logId);
+        localStorage.setItem(logKey, JSON.stringify(log));
+        saveAll();
+        renderInvHistoryList(tab);
+        renderItemManageList();
+    }
+    let _invEditRef = null;
+    function editInvLogEntry(tab, logId) {
+        const logKey = tab === 'add' ? 'asb_stock_add_log' : 'asb_waste_log';
+        let log = JSON.parse(localStorage.getItem(logKey)) || [];
+        let entry = log.find(x => x.id === logId);
+        if (!entry) return;
+        _invEditRef = { type: 'log', tab, logId };
+        document.getElementById('invRecEditName').innerText = entry.itemName;
+        document.getElementById('invRecEditInput').value = entry.qty;
+        document.getElementById('invRecEditOv').style.display = 'block';
+        document.getElementById('invRecEditBox').style.display = 'block';
+    }
+    // ===== Sale item edit & delete (adjusts the underlying bill) =====
+    function deleteInvSaleItem(billNo, dateKey, itemIndex) {
+        let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+        let idx = sales.findIndex(s => String(s.billNo) === String(billNo) && s.date === dateKey);
+        if (idx === -1) return;
+        let removed = sales[idx].items.splice(itemIndex, 1)[0];
+        if (removed) {
+            let i = menu.find(x => x.name.toLowerCase() === removed.name.toLowerCase());
+            if (i && i.stock !== null && i.stock !== undefined) i.stock = i.stock + (parseFloat(removed.qty) || 0);
+        }
+        localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
+        saveAll();
+        renderInvHistoryList('sale');
+        renderItemManageList();
+    }
+    function editInvSaleItem(billNo, dateKey, itemIndex) {
+        let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+        let idx = sales.findIndex(s => String(s.billNo) === String(billNo) && s.date === dateKey);
+        if (idx === -1) return;
+        let item = sales[idx].items[itemIndex];
+        if (!item) return;
+        _invEditRef = { type: 'sale', billNo, dateKey, itemIndex };
+        document.getElementById('invRecEditName').innerText = item.name;
+        document.getElementById('invRecEditInput').value = item.qty;
+        document.getElementById('invRecEditOv').style.display = 'block';
+        document.getElementById('invRecEditBox').style.display = 'block';
+    }
+    function closeInvRecEdit() {
+        document.getElementById('invRecEditOv').style.display = 'none';
+        document.getElementById('invRecEditBox').style.display = 'none';
+        _invEditRef = null;
+    }
+    function saveInvRecEdit() {
+        if (!_invEditRef) return;
+        let newQty = parseFloat(document.getElementById('invRecEditInput').value);
+        if (isNaN(newQty) || newQty < 0) { closeInvRecEdit(); return; }
+
+        if (_invEditRef.type === 'log') {
+            const { tab, logId } = _invEditRef;
+            const logKey = tab === 'add' ? 'asb_stock_add_log' : 'asb_waste_log';
+            let log = JSON.parse(localStorage.getItem(logKey)) || [];
+            let entry = log.find(x => x.id === logId);
+            if (entry) {
+                let delta = newQty - entry.qty;
+                let i = menu.find(x => x.name.toLowerCase() === entry.itemName.toLowerCase());
+                if (i && i.stock !== null && i.stock !== undefined) {
+                    i.stock = Math.max(0, i.stock + (tab === 'add' ? delta : -delta));
+                    entry.newStock = i.stock;
+                }
+                entry.qty = newQty;
+                localStorage.setItem(logKey, JSON.stringify(log));
+                saveAll();
+            }
+            closeInvRecEdit();
+            renderInvHistoryList(tab);
+            renderItemManageList();
+        } else if (_invEditRef.type === 'sale') {
+            const { billNo, dateKey, itemIndex } = _invEditRef;
+            let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+            let idx = sales.findIndex(s => String(s.billNo) === String(billNo) && s.date === dateKey);
+            if (idx !== -1) {
+                let item = sales[idx].items[itemIndex];
+                if (item) {
+                    let delta = newQty - (parseFloat(item.qty) || 0);
+                    let i = menu.find(x => x.name.toLowerCase() === item.name.toLowerCase());
+                    if (i && i.stock !== null && i.stock !== undefined) i.stock = Math.max(0, i.stock - delta);
+                    item.qty = newQty;
+                    localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
+                    saveAll();
+                }
+            }
+            closeInvRecEdit();
+            renderInvHistoryList('sale');
+            renderItemManageList();
         }
     }
 
@@ -3018,6 +3142,17 @@ function deleteBill(billNo, dateKey, displayLabel){
     <input type="number" id="editQtyInput" step="1" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:14px;font-size:16px;box-sizing:border-box;text-align:center;">
     <button onclick="saveEditQty()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">✅ Save</button>
     <button onclick="closeEditQtyModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+</div>
+
+<!-- Edit popup for Inventory history rows (Add/Sale/Waste) -->
+<div id="invRecEditOv" onclick="closeInvRecEdit()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;backdrop-filter:blur(4px);"></div>
+<div id="invRecEditBox" style="display:none;position:fixed;z-index:100001;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:320px;background:#fff;border-radius:22px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
+    <div style="text-align:center;font-size:34px;margin-bottom:6px;">✏️</div>
+    <h3 style="text-align:center;margin:0 0 4px;font-size:17px;color:#0f172a;font-weight:800;">Edit Quantity</h3>
+    <p id="invRecEditName" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 16px;font-weight:700;"></p>
+    <input type="number" id="invRecEditInput" step="1" min="0" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:14px;font-size:16px;box-sizing:border-box;text-align:center;">
+    <button onclick="saveInvRecEdit()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">✅ Save</button>
+    <button onclick="closeInvRecEdit()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
 </div>
 
 <!-- Delete confirmation popup (Manage Items screen) -->
