@@ -396,6 +396,7 @@
     <div class="dash-container">
         <div class="dash-tile bg-reports" onclick="showReports()"><span>📊</span>Reports</div>
         <div class="dash-tile bg-reports" onclick="showTopSelling()"><span>🏆</span>Top Selling</div>
+        <div class="dash-tile bg-reports" onclick="showItemManage()"><span>➕</span>Add Item</div>
         <div class="dash-tile bg-pos" onclick="closeDash()"><span>🖥️</span>POS</div>
         <div class="dash-tile bg-logout" onclick="location.reload()"><span>⬅️</span>Logout</div>
         
@@ -1243,7 +1244,7 @@ function printThermal(doc) {
                 } else {
                     itemMedia = '';
                 }
-                d.innerHTML = `${itemMedia}<span class="cat-badge">${i.cat}</span><b>${i.name}</b><br><b style="color:var(--a)">${i.price.toFixed(3)}</b>`; 
+                d.innerHTML = `${itemMedia}<span class="cat-badge">${i.cat}</span><b>${i.name}</b><br><b style="color:var(--a)">${i.price.toFixed(3)}</b>${(localStorage.getItem('asb_show_home_qty') === '1' && i.stock !== null && i.stock !== undefined) ? `<br><small style="color:#94a3b8;font-weight:700;">Qty: ${i.stock}</small>` : ''}`; 
                 d.onclick = () => { if(isMulti){ selSet.has(i.id) ? selSet.delete(i.id) : selSet.add(i.id); updateBar(); render(); } else addToCart(i); }; 
                 c.appendChild(d); 
             }); 
@@ -1301,11 +1302,12 @@ function saveCat() {
         let existing = menu.find(x => x.id === editId);
         Object.assign(existing, { name: n, price: p, cat: c, photo: itemPhoto });
     } else {
-        menu.push({ id: Date.now(), name: n, price: p, cat: c, photo: itemPhoto });
+        menu.push({ id: Date.now(), name: n, price: p, cat: c, photo: itemPhoto, stock: 0 });
     }
 
     saveAll();
     closeM();
+    if (typeof renderItemManageList === 'function') renderItemManageList();
 }
 
 // Popup dikhane aur band karne ke functions
@@ -1409,6 +1411,112 @@ function updateCartUI(rebuildList = true) {
     function updateBar() { document.getElementById('sc').innerText = `${selSet.size} Selected`; document.getElementById('edBtn').style.display = selSet.size === 1 ? "block" : "none"; let d = document.getElementById('delBtn'); d.disabled = !selSet.size; d.style.opacity = selSet.size ? "1" : "0.5"; }
     function handleDeleteAsk() { show('delConfirmM'); }
     function confirmDelete() { if(isCatMulti) { cats = cats.filter(c => !selSet.has(c.n)); menu = menu.filter(i => !selSet.has(i.cat)); } else { menu = menu.filter(i => !selSet.has(i.id)); } saveAll(); exitMulti(); closeM(); }
+    function openEditItemModal(id) {
+        editId = id;
+        let i = menu.find(x => x.id === editId);
+        document.getElementById('nn').value = i.name;
+        document.getElementById('np').value = i.price;
+        let s = document.getElementById('nc');
+        s.innerHTML = cats.map(c => `<option value="${c.n}" ${c.n===i.cat?'selected':''}>${c.n}</option>`).join('');
+        if (i.photo) {
+            let img = document.getElementById('itemPhotoImg');
+            img.src = i.photo;
+            img.style.display = 'block';
+            document.getElementById('itemPhotoPlaceholder').style.display = 'none';
+            document.getElementById('itemRemoveBtn').style.display = 'block';
+        } else {
+            document.getElementById('itemPhotoImg').style.display = 'none';
+            document.getElementById('itemPhotoImg').src = '';
+            document.getElementById('itemPhotoPlaceholder').style.display = 'block';
+            document.getElementById('itemRemoveBtn').style.display = 'none';
+        }
+        show('am');
+    }
+    let _pendingDeleteItemId = null;
+    function deleteItemFromManage(id) {
+        let i = menu.find(x => x.id === id);
+        if (!i) return;
+        _pendingDeleteItemId = id;
+        document.getElementById('itemDelConfirmName').innerText = i.name;
+        document.getElementById('itemDelOv').style.display = 'block';
+        document.getElementById('itemDelBox').style.display = 'block';
+    }
+    function closeItemDelConfirm() {
+        document.getElementById('itemDelOv').style.display = 'none';
+        document.getElementById('itemDelBox').style.display = 'none';
+        _pendingDeleteItemId = null;
+    }
+    function confirmDeleteItemFromManage() {
+        if (_pendingDeleteItemId === null) return;
+        let i = menu.find(x => x.id === _pendingDeleteItemId);
+        if (i) i.stock = null; // Sirf inventory list se hataayein — product POS mein rahega
+        saveAll();
+        closeItemDelConfirm();
+        renderItemManageList();
+    }
+    function showItemManage() {
+        document.getElementById('itemManagePage').style.display = 'flex';
+        document.getElementById('homeQtyToggle').checked = localStorage.getItem('asb_show_home_qty') === '1';
+        document.getElementById('itemManageSearch').value = '';
+        renderItemManageList();
+    }
+    function closeItemManage() {
+        document.getElementById('itemManagePage').style.display = 'none';
+    }
+    function toggleHomeQtyDisplay(cb) {
+        localStorage.setItem('asb_show_home_qty', cb.checked ? '1' : '0');
+        render();
+    }
+    function renderItemManageList() {
+        const listEl = document.getElementById('itemManageList');
+        if (!listEl) return;
+        const searchEl = document.getElementById('itemManageSearch');
+        const q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+        let items = q ? menu.filter(i => i.name.toLowerCase().includes(q)) : menu;
+        if (!items.length) {
+            listEl.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:40px 0;">Koi item nahi mila</div>';
+            return;
+        }
+        listEl.innerHTML = items.map(i => `
+            <div style="display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:10px 12px; margin-bottom:10px;">
+                ${i.photo ? `<img src="${i.photo}" style="width:46px;height:46px;object-fit:cover;border-radius:10px;flex-shrink:0;">` : `<div style="width:46px;height:46px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🧁</div>`}
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:800; font-size:13px; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${i.name}</div>
+                    <div style="font-size:11px; color:#64748b;">${i.cat} • Qty: ${(i.stock===null || i.stock===undefined) ? 0 : i.stock}</div>
+                </div>
+                <button onclick="openEditQtyModal(${i.id})" style="background:#eff6ff; color:#1d4ed8; border:none; padding:8px 12px; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer; flex-shrink:0;">✏️ Edit</button>
+                <button onclick="deleteItemFromManage(${i.id})" style="background:#fef2f2; color:#b91c1c; border:none; padding:8px 12px; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer; flex-shrink:0;">🗑️</button>
+            </div>
+        `).join('');
+    }
+
+    // ===== Edit Quantity popup (Manage Items screen) =====
+    let _editQtyItemId = null;
+    function openEditQtyModal(id) {
+        _editQtyItemId = id;
+        let i = menu.find(x => x.id === id);
+        if (!i) return;
+        document.getElementById('editQtyItemName').innerText = i.name;
+        document.getElementById('editQtyInput').value = (i.stock === null || i.stock === undefined) ? 0 : i.stock;
+        document.getElementById('editQtyOv').style.display = 'block';
+        document.getElementById('editQtyBox').style.display = 'block';
+    }
+    function closeEditQtyModal() {
+        document.getElementById('editQtyOv').style.display = 'none';
+        document.getElementById('editQtyBox').style.display = 'none';
+        _editQtyItemId = null;
+    }
+    function saveEditQty() {
+        if (_editQtyItemId === null) return;
+        let i = menu.find(x => x.id === _editQtyItemId);
+        if (!i) return;
+        let v = parseFloat(document.getElementById('editQtyInput').value);
+        i.stock = isNaN(v) ? 0 : v;
+        saveAll();
+        closeEditQtyModal();
+        renderItemManageList();
+    }
+
     function handleEdit() { 
         let val = Array.from(selSet)[0]; 
         if(isCatMulti) { 
@@ -1429,25 +1537,7 @@ function updateCartUI(rebuildList = true) {
             }
             show('catM'); 
         } else { 
-            editId = val; 
-            let i = menu.find(x => x.id === editId); 
-            document.getElementById('nn').value = i.name; 
-            document.getElementById('np').value = i.price; 
-            let s = document.getElementById('nc'); 
-            s.innerHTML = cats.map(c => `<option value="${c.n}" ${c.n===i.cat?'selected':''}>${c.n}</option>`).join('');
-            if (i.photo) {
-                let img = document.getElementById('itemPhotoImg');
-                img.src = i.photo;
-                img.style.display = 'block';
-                document.getElementById('itemPhotoPlaceholder').style.display = 'none';
-                document.getElementById('itemRemoveBtn').style.display = 'block';
-            } else {
-                document.getElementById('itemPhotoImg').style.display = 'none';
-                document.getElementById('itemPhotoImg').src = '';
-                document.getElementById('itemPhotoPlaceholder').style.display = 'block';
-                document.getElementById('itemRemoveBtn').style.display = 'none';
-            }
-            show('am'); 
+            openEditItemModal(val);
         } 
     }
     function enableCatMulti() { isCatMulti = true; isMulti = false; curCat = null; selSet.clear(); updateBar(); document.getElementById('eb').style.display = 'flex'; closeM(); render(); }
@@ -1688,13 +1778,32 @@ function closeTopSelling(){
     document.getElementById('topSellingPage').style.display = 'none';
 }
 
+function toggleTopSellManualPicker(){
+    const p = document.getElementById('topSellManualPicker');
+    p.style.display = (p.style.display === 'none' || !p.style.display) ? 'flex' : 'none';
+    document.querySelectorAll('.tsell-filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.tsell-filter-btn[data-f="manual"]').classList.add('active');
+}
+function applyTopSellManualFilter(){
+    const s = document.getElementById('topSellManualStart').value;
+    const e = document.getElementById('topSellManualEnd').value;
+    if (!s || !e) { if (typeof showAppAlert === 'function') showAppAlert('⚠️ Required', 'Please choose both start and end dates'); else alert('Please choose both start and end dates'); return; }
+    _topSellCurrentFilter = 'manual';
+    renderTopSellingRange(new Date(s), new Date(e));
+}
+
 function renderTopSelling(filter){
     _topSellCurrentFilter = filter;
     document.querySelectorAll('.tsell-filter-btn').forEach(b => b.classList.remove('active'));
     const activeBtn = document.querySelector('.tsell-filter-btn[data-f="' + filter + '"]');
     if (activeBtn) activeBtn.classList.add('active');
+    if (filter !== 'manual') document.getElementById('topSellManualPicker').style.display = 'none';
 
     const { start, end } = getRepDateRange(filter);
+    renderTopSellingRange(start, end);
+}
+
+function renderTopSellingRange(start, end){
     const itemsArr = getTopItemsInRange(start, end);
 
     const listEl = document.getElementById('topSellList');
@@ -1707,7 +1816,7 @@ function renderTopSelling(filter){
     listEl.innerHTML = itemsArr.map((item, idx) => {
         const pct = Math.max(Math.round((item.qty / maxQty) * 100), 6);
         return `
-        <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:2px 4px; margin-bottom:0px;">
+        <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #e2e8f0; border-radius:14px; padding:12px 14px; margin-bottom:10px;">
             <div style="width:28px; height:28px; border-radius:50%; background:#eff6ff; color:#1d4ed8; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${idx+1}</div>
             <div style="flex:1; min-width:0;">
                 <div style="font-weight:800; font-size:13px; color:#1e293b; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.name}</div>
@@ -2064,6 +2173,7 @@ function saveEditedBill() {
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
     let idx = sales.findIndex(s => String(s.billNo) === String(billNo) && s.date === dateKey);
     if (idx !== -1) {
+        adjustStockForItems(sales[idx].items, +1); // purani items ka stock wapas
         sales[idx].items = JSON.parse(JSON.stringify(editCartItems));
         sales[idx].amount = parseFloat(grand.toFixed(3));
         sales[idx].discountPerc = discount;
@@ -2071,6 +2181,7 @@ function saveEditedBill() {
         sales[idx].method = method;
         sales[idx].customerPhone = custPhone;
         localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
+        adjustStockForItems(editCartItems, -1); // nayi items ka stock ghataayein
         setTicketMethodState(sales[idx].ticketNo, dateKey, method);
     }
 
@@ -2343,6 +2454,21 @@ function exportToExcel() {
     XLSX.utils.book_append_sheet(wb, ws, "Report");
     XLSX.writeFile(wb, `ASH_BAKES_REPORT_${start}.xlsx`);
 }
+// Inventory helper: sign = -1 reduces stock (on sale), +1 restores stock (on delete/edit rollback)
+function adjustStockForItems(items, sign) {
+    if (!items || !items.length) return;
+    let changed = false;
+    items.forEach(it => {
+        let m = menu.find(x => x.name.toLowerCase() === String(it.name).toLowerCase());
+        if (m && m.stock !== null && m.stock !== undefined) {
+            let q = parseFloat(it.qty) || 0;
+            m.stock = Math.max(0, m.stock + (sign * q));
+            changed = true;
+        }
+    });
+    if (changed) saveAll();
+}
+
 function logSale(total, bNo) {
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
     const now = new Date();
@@ -2369,8 +2495,15 @@ function logSale(total, bNo) {
 
     // Agar isi ticket ka aaj ka pending bill (same billNo, method blank) already hai to usko update karo, warna naya add karo
     let idx = sales.findIndex(s => String(s.billNo) === String(bNo) && s.date === dateKey && !s.method);
-    if (idx !== -1) { sales[idx] = newSale; } else { sales.push(newSale); }
+    if (idx !== -1) {
+        // Purani items ka stock wapas karein, phir naye items ka stock ghataayein (double-count na ho)
+        adjustStockForItems(sales[idx].items, +1);
+        sales[idx] = newSale;
+    } else {
+        sales.push(newSale);
+    }
     localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
+    adjustStockForItems(newSale.items, -1);
 }
 
 // 1. Poora data (Items + Sales) file mein download karne ke liye
@@ -2595,7 +2728,7 @@ function deleteBill(billNo, dateKey, displayLabel){
       let target = s.find(x => String(x.billNo) === String(billNo) && x.date === dateKey);
       s = s.filter(x => !(String(x.billNo) === String(billNo) && x.date === dateKey));
       localStorage.setItem('asb_sales_logs', JSON.stringify(s));
-      if (target) releaseTicketIfSameDay(target.ticketNo, dateKey);
+      if (target) { releaseTicketIfSameDay(target.ticketNo, dateKey); adjustStockForItems(target.items, +1); }
       showIndividualBills(dateKey, displayLabel);
       showReports();
     };
@@ -2628,6 +2761,12 @@ function deleteBill(billNo, dateKey, displayLabel){
             <button class="tsell-filter-btn" data-f="yesterday" onclick="renderTopSelling('yesterday')">Yesterday</button>
             <button class="tsell-filter-btn" data-f="week" onclick="renderTopSelling('week')">This Week</button>
             <button class="tsell-filter-btn" data-f="month" onclick="renderTopSelling('month')">This Month</button>
+            <button class="tsell-filter-btn" data-f="manual" onclick="toggleTopSellManualPicker()">Manual 📅</button>
+        </div>
+        <div id="topSellManualPicker" style="display:none; gap:8px; align-items:center; margin-bottom:8px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
+            <input type="date" id="topSellManualStart" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+            <input type="date" id="topSellManualEnd" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+            <button onclick="applyTopSellManualFilter()" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
         </div>
     </div>
 
@@ -2637,6 +2776,58 @@ function deleteBill(billNo, dateKey, displayLabel){
         .tsell-filter-btn { white-space:nowrap; padding:8px 16px; border-radius:18px; border:1.5px solid #e2e8f0; background:#f8fafc; color:#334155; font-weight:700; font-size:12px; cursor:pointer; }
         .tsell-filter-btn.active { background:#00C7C7; border-color:#00C7C7; color:#fff; }
     </style>
+</div>
+
+<!-- ===== NEW: MANAGE ITEMS (Add / Edit / Delete) SCREEN ===== -->
+<div id="itemManagePage" class="full-page" style="background:#f8fafc; overflow:hidden; display:none; flex-direction:column;">
+    <div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
+        <b style="font-size:17px; color:#1e293b;">Manage Items</b>
+        <button onclick="closeItemManage()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;">Back</button>
+    </div>
+
+    <div style="padding:12px 12px 0; flex-shrink:0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:12px 14px; margin-bottom:10px;">
+            <span style="font-weight:700; font-size:13px; color:#1e293b;">👁️ Show Quantity on Home Page</span>
+            <label style="position:relative; display:inline-block; width:44px; height:24px; flex-shrink:0;">
+                <input type="checkbox" id="homeQtyToggle" onchange="toggleHomeQtyDisplay(this)" style="opacity:0; width:0; height:0;">
+                <span style="position:absolute; cursor:pointer; inset:0; background:#92400e; border-radius:24px; transition:0.2s;"></span>
+                <span style="position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.2s;"></span>
+            </label>
+        </div>
+        <div style="position:relative; margin-bottom:10px;">
+            <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;">🔍</span>
+            <input type="text" id="itemManageSearch" placeholder="Search item to manage quantity..." oninput="renderItemManageList()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;">
+        </div>
+    </div>
+
+    <div id="itemManageList" style="flex:1; overflow-y:auto; padding:6px 12px 16px;"></div>
+
+    <style>
+        #homeQtyToggle:checked + span { background:#10b981; }
+        #homeQtyToggle:checked + span + span { transform:translateX(20px); }
+    </style>
+</div>
+
+<!-- Edit Quantity popup (Manage Items screen) -->
+<div id="editQtyOv" onclick="closeEditQtyModal()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;backdrop-filter:blur(4px);"></div>
+<div id="editQtyBox" style="display:none;position:fixed;z-index:100001;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:320px;background:#fff;border-radius:22px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
+    <div style="text-align:center;font-size:34px;margin-bottom:6px;">📦</div>
+    <h3 style="text-align:center;margin:0 0 4px;font-size:17px;color:#0f172a;font-weight:800;">Edit Quantity</h3>
+    <p id="editQtyItemName" style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 16px;font-weight:700;"></p>
+    <input type="number" id="editQtyInput" step="1" style="width:100%;padding:13px;border-radius:12px;border:1.5px solid #e2e8f0;margin-bottom:14px;font-size:16px;box-sizing:border-box;text-align:center;">
+    <button onclick="saveEditQty()" style="width:100%;background:linear-gradient(135deg,#059669,#047857);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">✅ Save</button>
+    <button onclick="closeEditQtyModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+</div>
+
+<!-- Delete confirmation popup (Manage Items screen) -->
+<div id="itemDelOv" onclick="closeItemDelConfirm()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;backdrop-filter:blur(4px);"></div>
+<div id="itemDelBox" style="display:none;position:fixed;z-index:100001;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:320px;background:#fff;border-radius:22px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.28);">
+    <div style="text-align:center;font-size:38px;margin-bottom:8px;">🗑️</div>
+    <h3 style="text-align:center;margin:0 0 4px;font-size:18px;color:#0f172a;font-weight:800;">Remove from Inventory?</h3>
+    <p style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 4px;">Are you sure you want to delete</p>
+    <p id="itemDelConfirmName" style="text-align:center;color:#1e293b;font-size:14px;font-weight:800;margin:0 0 18px;"></p>
+    <button onclick="confirmDeleteItemFromManage()" style="width:100%;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">🗑️ Delete</button>
+    <button onclick="closeItemDelConfirm()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
 </div>
 
 <div id="dateDetailsPage" class="full-page" style="background: #f1f5f9; display: none; flex-direction: column; overflow: hidden;">
