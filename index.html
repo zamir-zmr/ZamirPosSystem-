@@ -396,7 +396,8 @@
     <div class="dash-container">
         <div class="dash-tile bg-reports" onclick="showReports()"><span>📊</span>Reports</div>
         <div class="dash-tile bg-reports" onclick="showTopSelling()"><span>🏆</span>Top Selling</div>
-        <div class="dash-tile bg-reports" onclick="showItemManage()"><span>➕</span>Add Item</div>
+        <div class="dash-tile bg-reports" onclick="showItemManage()"><span>📋</span>Manage Items</div>
+        <div class="dash-tile bg-reports" onclick="showInventoryDash()"><span>📦</span>Inventory</div>
         <div class="dash-tile bg-pos" onclick="closeDash()"><span>🖥️</span>POS</div>
         <div class="dash-tile bg-logout" onclick="location.reload()"><span>⬅️</span>Logout</div>
         
@@ -1484,10 +1485,196 @@ function updateCartUI(rebuildList = true) {
                     <div style="font-weight:800; font-size:13px; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${i.name}</div>
                     <div style="font-size:11px; color:#64748b;">${i.cat} • Qty: ${(i.stock===null || i.stock===undefined) ? 0 : i.stock}</div>
                 </div>
-                <button onclick="openEditQtyModal(${i.id})" style="background:#eff6ff; color:#1d4ed8; border:none; padding:8px 12px; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer; flex-shrink:0;">✏️ Edit</button>
-                <button onclick="deleteItemFromManage(${i.id})" style="background:#fef2f2; color:#b91c1c; border:none; padding:8px 12px; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer; flex-shrink:0;">🗑️</button>
             </div>
         `).join('');
+    }
+
+    // ============ NEW: INVENTORY DASHBOARD (Add Item / Sale Item / Waste Item) ============
+    let _invCurrentFilter = { add: 'today', sale: 'today', waste: 'today' };
+    let _invCurrentRange = { add: null, sale: null, waste: null };
+
+    function showInventoryDash() {
+        document.getElementById('invDashPage').style.display = 'flex';
+        switchInvTab('add');
+    }
+    function closeInventoryDash() {
+        document.getElementById('invDashPage').style.display = 'none';
+    }
+    function switchInvTab(tab) {
+        document.querySelectorAll('.inv-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        document.querySelectorAll('.inv-tab-panel').forEach(p => p.style.display = 'none');
+        document.getElementById('invTab-' + tab).style.display = 'block';
+        renderInvHistory(tab, _invCurrentFilter[tab] || 'today');
+        if (tab === 'add') renderInvAddSearchResults();
+        if (tab === 'waste') renderInvWasteSearchResults();
+    }
+
+    function renderInvAddSearchResults() {
+        const q = document.getElementById('invAddSearch').value.trim().toLowerCase();
+        const box = document.getElementById('invAddSearchResults');
+        if (!q) { box.innerHTML = ''; return; }
+        const matches = menu.filter(i => i.name.toLowerCase().includes(q)).slice(0, 8);
+        if (!matches.length) { box.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:12px;padding:10px 0;">Koi product nahi mila</div>'; return; }
+        box.innerHTML = matches.map(i => `
+            <div style="display:flex; align-items:center; gap:10px; background:#fff; border:1.5px solid #dcfce7; border-radius:12px; padding:10px; margin-bottom:8px;">
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:800; font-size:12.5px; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${i.name}</div>
+                    <div style="font-size:10.5px; color:#64748b;">Current Qty: ${(i.stock===null||i.stock===undefined)?0:i.stock}</div>
+                </div>
+                <input type="number" id="invAddQty-${i.id}" value="1" min="1" style="width:60px; padding:8px; border-radius:8px; border:1px solid #e2e8f0; text-align:center; font-size:13px;">
+                <button onclick="addStockToItem(${i.id})" style="background:#059669; color:#fff; border:none; padding:9px 12px; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer;">➕ Add</button>
+            </div>
+        `).join('');
+    }
+    function addStockToItem(id) {
+        let i = menu.find(x => x.id === id);
+        if (!i) return;
+        let qty = parseFloat(document.getElementById('invAddQty-' + id).value) || 0;
+        if (qty <= 0) return;
+        let cur = (i.stock === null || i.stock === undefined) ? 0 : i.stock;
+        i.stock = cur + qty;
+        saveAll();
+        let log = JSON.parse(localStorage.getItem('asb_stock_add_log')) || [];
+        const now = new Date();
+        log.push({
+            id: Date.now(),
+            itemName: i.name,
+            qty: qty,
+            newStock: i.stock,
+            date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
+            time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+        });
+        localStorage.setItem('asb_stock_add_log', JSON.stringify(log));
+        document.getElementById('invAddSearch').value = '';
+        renderInvAddSearchResults();
+        renderInvHistory('add', _invCurrentFilter.add || 'today');
+        renderItemManageList();
+    }
+
+    function renderInvWasteSearchResults() {
+        const q = document.getElementById('invWasteSearch').value.trim().toLowerCase();
+        const box = document.getElementById('invWasteSearchResults');
+        if (!q) { box.innerHTML = ''; return; }
+        const matches = menu.filter(i => i.name.toLowerCase().includes(q)).slice(0, 8);
+        if (!matches.length) { box.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:12px;padding:10px 0;">Koi product nahi mila</div>'; return; }
+        box.innerHTML = matches.map(i => `
+            <div style="display:flex; align-items:center; gap:10px; background:#fff; border:1.5px solid #fee2e2; border-radius:12px; padding:10px; margin-bottom:8px;">
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:800; font-size:12.5px; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${i.name}</div>
+                    <div style="font-size:10.5px; color:#64748b;">Current Qty: ${(i.stock===null||i.stock===undefined)?0:i.stock}</div>
+                </div>
+                <input type="number" id="invWasteQty-${i.id}" value="1" min="1" style="width:60px; padding:8px; border-radius:8px; border:1px solid #e2e8f0; text-align:center; font-size:13px;">
+                <button onclick="addWasteForItem(${i.id})" style="background:#b91c1c; color:#fff; border:none; padding:9px 12px; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer;">🗑️ Waste</button>
+            </div>
+        `).join('');
+    }
+    function addWasteForItem(id) {
+        let i = menu.find(x => x.id === id);
+        if (!i) return;
+        let qty = parseFloat(document.getElementById('invWasteQty-' + id).value) || 0;
+        if (qty <= 0) return;
+        let cur = (i.stock === null || i.stock === undefined) ? 0 : i.stock;
+        i.stock = Math.max(0, cur - qty);
+        saveAll();
+        let log = JSON.parse(localStorage.getItem('asb_waste_log')) || [];
+        const now = new Date();
+        log.push({
+            id: Date.now(),
+            itemName: i.name,
+            qty: qty,
+            newStock: i.stock,
+            date: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`,
+            time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+        });
+        localStorage.setItem('asb_waste_log', JSON.stringify(log));
+        document.getElementById('invWasteSearch').value = '';
+        renderInvWasteSearchResults();
+        renderInvHistory('waste', _invCurrentFilter.waste || 'today');
+        renderItemManageList();
+    }
+
+    function toggleInvManualPicker(tab) {
+        const p = document.getElementById('invManualPicker-' + tab);
+        p.style.display = (p.style.display === 'none' || !p.style.display) ? 'flex' : 'none';
+        document.querySelectorAll('.inv-filter-btn[data-tab="' + tab + '"]').forEach(b => b.classList.remove('active'));
+        document.querySelector('.inv-filter-btn[data-tab="' + tab + '"][data-f="manual"]').classList.add('active');
+    }
+    function applyInvManualFilter(tab) {
+        const s = document.getElementById('invManualStart-' + tab).value;
+        const e = document.getElementById('invManualEnd-' + tab).value;
+        if (!s || !e) { if (typeof showAppAlert === 'function') showAppAlert('⚠️ Required', 'Please choose both start and end dates'); else alert('Please choose both start and end dates'); return; }
+        _invCurrentFilter[tab] = 'manual';
+        _invCurrentRange[tab] = { start: new Date(s), end: new Date(e) };
+        renderInvHistoryList(tab);
+    }
+
+    function renderInvHistory(tab, filter) {
+        _invCurrentFilter[tab] = filter;
+        document.querySelectorAll('.inv-filter-btn[data-tab="' + tab + '"]').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.querySelector('.inv-filter-btn[data-tab="' + tab + '"][data-f="' + filter + '"]');
+        if (activeBtn) activeBtn.classList.add('active');
+        if (filter !== 'manual') document.getElementById('invManualPicker-' + tab).style.display = 'none';
+
+        if (filter === 'manual') {
+            renderInvHistoryList(tab);
+            return;
+        }
+        _invCurrentRange[tab] = getRepDateRange(filter);
+        renderInvHistoryList(tab);
+    }
+
+    function renderInvHistoryList(tab) {
+        const range = _invCurrentRange[tab] || getRepDateRange('today');
+        const startKey = repFmtKey(range.start);
+        const endKey = repFmtKey(range.end);
+        const listEl = document.getElementById('invHistList-' + tab);
+        if (!listEl) return;
+
+        if (tab === 'sale') {
+            const q = (document.getElementById('invSaleSearch').value || '').trim().toLowerCase();
+            let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+            let inRange = sales.filter(s => s.date >= startKey && s.date <= endKey);
+            let rows = [];
+            inRange.forEach(s => {
+                (s.items || []).forEach(it => {
+                    if (q && !it.name.toLowerCase().includes(q)) return;
+                    rows.push({ name: it.name, qty: it.qty, date: s.date, time: s.time, billNo: s.billNo });
+                });
+            });
+            rows.sort((a,b) => (b.date+b.time).localeCompare(a.date+a.time));
+            if (!rows.length) { listEl.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:30px 0;">Is period ke liye koi sale nahi mili</div>'; return; }
+            listEl.innerHTML = rows.map((r, idx) => `
+                <div style="display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; margin-bottom:8px;">
+                    <div style="width:24px; height:24px; border-radius:50%; background:#fef2f2; color:#b91c1c; font-weight:800; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${idx+1}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:800; font-size:12.5px; color:#1e293b;">${r.name}</div>
+                        <div style="font-size:10.5px; color:#64748b;">Bill #${r.billNo} • ${r.date} ${r.time}</div>
+                    </div>
+                    <div style="font-weight:800; font-size:13px; color:#b91c1c;">-${r.qty}</div>
+                </div>
+            `).join('');
+        } else {
+            const searchId = tab === 'add' ? 'invAddSearch' : 'invWasteSearch';
+            const q = (document.getElementById(searchId).value || '').trim().toLowerCase();
+            const logKey = tab === 'add' ? 'asb_stock_add_log' : 'asb_waste_log';
+            let log = JSON.parse(localStorage.getItem(logKey)) || [];
+            let rows = log.filter(r => r.date >= startKey && r.date <= endKey && (!q || r.itemName.toLowerCase().includes(q)));
+            rows.sort((a,b) => (b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+            if (!rows.length) { listEl.innerHTML = '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:30px 0;">Is period ke liye koi entry nahi hai</div>'; return; }
+            const color = tab === 'add' ? '#059669' : '#b91c1c';
+            const bg = tab === 'add' ? '#ecfdf5' : '#fef2f2';
+            const sign = tab === 'add' ? '+' : '-';
+            listEl.innerHTML = rows.map((r, idx) => `
+                <div style="display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; margin-bottom:8px;">
+                    <div style="width:24px; height:24px; border-radius:50%; background:${bg}; color:${color}; font-weight:800; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">${idx+1}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-weight:800; font-size:12.5px; color:#1e293b;">${r.itemName}</div>
+                        <div style="font-size:10.5px; color:#64748b;">${r.date} ${r.time || ''} • New Qty: ${r.newStock}</div>
+                    </div>
+                    <div style="font-weight:800; font-size:13px; color:${color};">${sign}${r.qty}</div>
+                </div>
+            `).join('');
+        }
     }
 
     // ===== Edit Quantity popup (Manage Items screen) =====
@@ -2828,6 +3015,107 @@ function deleteBill(billNo, dateKey, displayLabel){
     <p id="itemDelConfirmName" style="text-align:center;color:#1e293b;font-size:14px;font-weight:800;margin:0 0 18px;"></p>
     <button onclick="confirmDeleteItemFromManage()" style="width:100%;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;border:none;padding:15px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">🗑️ Delete</button>
     <button onclick="closeItemDelConfirm()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:13px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+</div>
+
+<!-- ===== NEW: INVENTORY DASHBOARD (Add Item / Sale Item / Waste Item) ===== -->
+<div id="invDashPage" class="full-page" style="background:#f8fafc; overflow:hidden; display:none; flex-direction:column;">
+    <div class="dash-header" style="background:white; padding:14px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
+        <b style="font-size:17px; color:#1e293b;">Inventory</b>
+        <button onclick="closeInventoryDash()" style="border:none; background:#eff6ff; color:#3b82f6; padding:7px 16px; border-radius:8px; font-weight:bold; font-size:12px;">Back</button>
+    </div>
+
+    <div style="display:flex; background:#fff; border-bottom:1px solid #e2e8f0; flex-shrink:0;">
+        <button class="inv-tab-btn active" data-tab="add" onclick="switchInvTab('add')" style="flex:1; padding:13px 4px; border:none; background:none; font-weight:800; font-size:12.5px; cursor:pointer; border-bottom:3px solid transparent;">➕ Add Item</button>
+        <button class="inv-tab-btn" data-tab="sale" onclick="switchInvTab('sale')" style="flex:1; padding:13px 4px; border:none; background:none; font-weight:800; font-size:12.5px; cursor:pointer; border-bottom:3px solid transparent;">🛒 Sale Item</button>
+        <button class="inv-tab-btn" data-tab="waste" onclick="switchInvTab('waste')" style="flex:1; padding:13px 4px; border:none; background:none; font-weight:800; font-size:12.5px; cursor:pointer; border-bottom:3px solid transparent;">🗑️ Waste Item</button>
+    </div>
+    <style>
+        .inv-tab-btn { color:#94a3b8; }
+        .inv-tab-btn.active { color:#00C7C7; border-bottom-color:#00C7C7 !important; }
+    </style>
+
+    <div style="flex:1; overflow-y:auto;">
+
+        <!-- ===== ADD ITEM TAB ===== -->
+        <div id="invTab-add" class="inv-tab-panel" style="padding:12px;">
+            <div style="position:relative; margin-bottom:10px;">
+                <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;">🔍</span>
+                <input type="text" id="invAddSearch" placeholder="Search product to add stock..." oninput="renderInvAddSearchResults()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;">
+            </div>
+            <div id="invAddSearchResults"></div>
+
+            <div style="display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px;">
+                <button class="inv-filter-btn active" data-tab="add" data-f="today" onclick="renderInvHistory('add','today')">Today</button>
+                <button class="inv-filter-btn" data-tab="add" data-f="yesterday" onclick="renderInvHistory('add','yesterday')">Yesterday</button>
+                <button class="inv-filter-btn" data-tab="add" data-f="week" onclick="renderInvHistory('add','week')">This Week</button>
+                <button class="inv-filter-btn" data-tab="add" data-f="month" onclick="renderInvHistory('add','month')">This Month</button>
+                <button class="inv-filter-btn" data-tab="add" data-f="manual" onclick="toggleInvManualPicker('add')">Manually 📅</button>
+            </div>
+            <div id="invManualPicker-add" class="inv-manual-picker" style="display:none; gap:8px; align-items:center; margin-bottom:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
+                <input type="date" id="invManualStart-add" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+                <input type="date" id="invManualEnd-add" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+                <button onclick="applyInvManualFilter('add')" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
+            </div>
+
+            <div style="font-weight:800; font-size:12px; color:#64748b; margin-bottom:8px;">📜 ADD HISTORY</div>
+            <div id="invHistList-add"></div>
+        </div>
+
+        <!-- ===== SALE ITEM TAB ===== -->
+        <div id="invTab-sale" class="inv-tab-panel" style="padding:12px; display:none;">
+            <div style="position:relative; margin-bottom:10px;">
+                <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;">🔍</span>
+                <input type="text" id="invSaleSearch" placeholder="Search sold item..." oninput="renderInvHistory('sale', _invCurrentFilter.sale)" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;">
+            </div>
+
+            <div style="display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px;">
+                <button class="inv-filter-btn active" data-tab="sale" data-f="today" onclick="renderInvHistory('sale','today')">Today</button>
+                <button class="inv-filter-btn" data-tab="sale" data-f="yesterday" onclick="renderInvHistory('sale','yesterday')">Yesterday</button>
+                <button class="inv-filter-btn" data-tab="sale" data-f="week" onclick="renderInvHistory('sale','week')">This Week</button>
+                <button class="inv-filter-btn" data-tab="sale" data-f="month" onclick="renderInvHistory('sale','month')">This Month</button>
+                <button class="inv-filter-btn" data-tab="sale" data-f="manual" onclick="toggleInvManualPicker('sale')">Manually 📅</button>
+            </div>
+            <div id="invManualPicker-sale" class="inv-manual-picker" style="display:none; gap:8px; align-items:center; margin-bottom:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
+                <input type="date" id="invManualStart-sale" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+                <input type="date" id="invManualEnd-sale" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+                <button onclick="applyInvManualFilter('sale')" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
+            </div>
+
+            <div style="font-weight:800; font-size:12px; color:#64748b; margin-bottom:8px;">📜 SALE HISTORY (auto from billing)</div>
+            <div id="invHistList-sale"></div>
+        </div>
+
+        <!-- ===== WASTE ITEM TAB ===== -->
+        <div id="invTab-waste" class="inv-tab-panel" style="padding:12px; display:none;">
+            <div style="position:relative; margin-bottom:10px;">
+                <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;">🔍</span>
+                <input type="text" id="invWasteSearch" placeholder="Search product to report waste..." oninput="renderInvWasteSearchResults()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;">
+            </div>
+            <div id="invWasteSearchResults"></div>
+
+            <div style="display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px;">
+                <button class="inv-filter-btn active" data-tab="waste" data-f="today" onclick="renderInvHistory('waste','today')">Today</button>
+                <button class="inv-filter-btn" data-tab="waste" data-f="yesterday" onclick="renderInvHistory('waste','yesterday')">Yesterday</button>
+                <button class="inv-filter-btn" data-tab="waste" data-f="week" onclick="renderInvHistory('waste','week')">This Week</button>
+                <button class="inv-filter-btn" data-tab="waste" data-f="month" onclick="renderInvHistory('waste','month')">This Month</button>
+                <button class="inv-filter-btn" data-tab="waste" data-f="manual" onclick="toggleInvManualPicker('waste')">Manually 📅</button>
+            </div>
+            <div id="invManualPicker-waste" class="inv-manual-picker" style="display:none; gap:8px; align-items:center; margin-bottom:10px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
+                <input type="date" id="invManualStart-waste" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+                <input type="date" id="invManualEnd-waste" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+                <button onclick="applyInvManualFilter('waste')" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
+            </div>
+
+            <div style="font-weight:800; font-size:12px; color:#64748b; margin-bottom:8px;">📜 WASTE HISTORY</div>
+            <div id="invHistList-waste"></div>
+        </div>
+
+    </div>
+
+    <style>
+        .inv-filter-btn { white-space:nowrap; padding:8px 14px; border-radius:18px; border:1.5px solid #e2e8f0; background:#f8fafc; color:#334155; font-weight:700; font-size:11.5px; cursor:pointer; }
+        .inv-filter-btn.active { background:#00C7C7; border-color:#00C7C7; color:#fff; }
+    </style>
 </div>
 
 <div id="dateDetailsPage" class="full-page" style="background: #f1f5f9; display: none; flex-direction: column; overflow: hidden;">
