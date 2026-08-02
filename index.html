@@ -2771,16 +2771,30 @@ function toggleResetLock() {
 
 // Data Reset karne ke liye
 function confirmFullReset() {
-    let confirm1 = confirm("Kya aap saara sales data 0 karna chahte hain?");
-    if (confirm1) {
-        let confirm2 = confirm("SURE? Yeh wapas nahi aayega!");
-        if (confirm2) {
-            localStorage.removeItem('asb_sales_logs'); // Sales logs delete
-            localStorage.setItem('asb_bill_count', '0'); // Bill count 0
-            alert("Data Reset Done");
-            showReports(); // Dashboard update
-            toggleResetLock(); // Wapas lock kar do
-        }
+    document.getElementById('resetConfirmOv').style.display = 'block';
+    document.getElementById('resetConfirmBox').style.display = 'block';
+}
+function closeResetConfirmModal() {
+    document.getElementById('resetConfirmOv').style.display = 'none';
+    document.getElementById('resetConfirmBox').style.display = 'none';
+}
+function proceedFullReset() {
+    closeResetConfirmModal();
+    const performReset = function () {
+        localStorage.removeItem('asb_sales_logs'); // Sales logs delete
+        localStorage.setItem('asb_bill_count', '0'); // Bill count 0
+        showReports(); // Dashboard update
+        toggleResetLock(); // Wapas lock kar do
+        if (typeof showAppAlert === 'function') showAppAlert('✅ Success', 'Data Reset Done'); else alert('Data Reset Done');
+    };
+    const savedPw = getSecurityPassword();
+    if (savedPw) {
+        _pendingDeleteAction = performReset;
+        document.getElementById('pwOv').style.display = 'block';
+        document.getElementById('pwBox').style.display = 'block';
+        setTimeout(() => { const el = document.getElementById('pwPromptInput'); if (el) el.focus(); }, 50);
+    } else {
+        performReset();
     }
 }
 
@@ -3042,7 +3056,6 @@ function deleteBill(billNo, dateKey, displayLabel){
                 <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;">🔍</span>
                 <input type="text" id="invAddSearch" placeholder="Search product to add stock..." oninput="renderInvAddSearchResults()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;">
             </div>
-            <div id="invAddSearchResults"></div>
 
             <div style="display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px;">
                 <button class="inv-filter-btn active" data-tab="add" data-f="today" onclick="renderInvHistory('add','today')">Today</button>
@@ -3056,6 +3069,8 @@ function deleteBill(billNo, dateKey, displayLabel){
                 <input type="date" id="invManualEnd-add" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
                 <button onclick="applyInvManualFilter('add')" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
             </div>
+
+            <div id="invAddSearchResults"></div>
 
             <div style="font-weight:800; font-size:12px; color:#64748b; margin-bottom:8px;">📜 ADD HISTORY</div>
             <div id="invHistList-add"></div>
@@ -3091,7 +3106,6 @@ function deleteBill(billNo, dateKey, displayLabel){
                 <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:15px;">🔍</span>
                 <input type="text" id="invWasteSearch" placeholder="Search product to report waste..." oninput="renderInvWasteSearchResults()" style="width:100%; padding:12px 12px 12px 38px; border-radius:12px; border:1.5px solid #e2e8f0; font-size:13px; box-sizing:border-box; background:#fff;">
             </div>
-            <div id="invWasteSearchResults"></div>
 
             <div style="display:flex; gap:8px; overflow-x:auto; padding:4px 0 10px;">
                 <button class="inv-filter-btn active" data-tab="waste" data-f="today" onclick="renderInvHistory('waste','today')">Today</button>
@@ -3105,6 +3119,8 @@ function deleteBill(billNo, dateKey, displayLabel){
                 <input type="date" id="invManualEnd-waste" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
                 <button onclick="applyInvManualFilter('waste')" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
             </div>
+
+            <div id="invWasteSearchResults"></div>
 
             <div style="font-weight:800; font-size:12px; color:#64748b; margin-bottom:8px;">📜 WASTE HISTORY</div>
             <div id="invHistList-waste"></div>
@@ -3289,7 +3305,14 @@ function deleteBill(billNo, dateKey, displayLabel){
   <button onclick="closeDelModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:15px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;">↩️ CANCEL</button>
 </div>
 
-
+<div id="resetConfirmOv" onclick="closeResetConfirmModal()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:99998;backdrop-filter:blur(4px);"></div>
+<div id="resetConfirmBox" style="display:none;position:fixed;z-index:99999;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:320px;background:#fff;border-radius:20px;padding:22px;box-shadow:0 8px 40px rgba(0,0,0,0.25);">
+  <div style="text-align:center;font-size:40px;margin-bottom:10px;">⚠️</div>
+  <h3 style="text-align:center;margin:0 0 6px;font-size:19px;color:#1e293b;font-weight:800;">Reset All Sales Data?</h3>
+  <p style="text-align:center;color:#94a3b8;font-size:13px;margin:0 0 24px;line-height:1.5;">Yeh sabhi sales data permanently delete kar dega. Is action ko wapas nahi kiya ja sakta.</p>
+  <button onclick="proceedFullReset()" style="width:100%;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;padding:16px;border-radius:16px;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;">🗑️ Yes, Reset All Data</button>
+  <button onclick="closeResetConfirmModal()" style="width:100%;background:#f8fafc;color:#64748b;border:1.5px solid #e2e8f0;padding:14px;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;">↩️ Cancel</button>
+</div>
 
 <div id="pwOv" onclick="closePwPromptModal()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:100000;backdrop-filter:blur(4px);"></div>
 <div id="pwBox" style="display:none;position:fixed;z-index:100001;top:50%;left:50%;transform:translate(-50%,-50%);width:50%;max-width:320px;background:#fff;border-radius:20px;padding:18px;box-shadow:0 8px 40px rgba(0,0,0,0.25);">
