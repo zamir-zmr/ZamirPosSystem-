@@ -1,6 +1,304 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ASH BAKES – 80mm Receipt</title>
+  <!-- Force 80mm width, no side whitespace, exactly like a thermal receipt -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #e2e8f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Courier New', Courier, monospace;
+      padding: 8px;
+    }
+
+    /* ===== 80mm RECEIPT – EXACT WIDTH, NO EXTRA SPACE ===== */
+    .receipt-80 {
+      width: 80mm;
+      max-width: 80mm;
+      background: white;
+      padding: 3mm 4mm 5mm;
+      margin: 0 auto;
+      border-radius: 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      font-size: 10pt;
+      line-height: 1.35;
+      color: #000;
+      box-sizing: border-box;
+    }
+
+    /* all children stay inside 80mm */
+    .receipt-80 * {
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    .receipt-80 .logo {
+      display: block;
+      width: 40mm;
+      height: 40mm;
+      object-fit: contain;
+      margin: 0 auto 2mm;
+      background: #fafafa;
+      border-radius: 4px;
+    }
+
+    .receipt-80 .shop-name {
+      font-size: 14pt;
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+    .receipt-80 .addr,
+    .receipt-80 .phone {
+      font-size: 8pt;
+      text-align: center;
+    }
+    .receipt-80 .hall {
+      font-size: 12pt;
+      font-weight: 700;
+      text-align: center;
+      margin: 1.5mm 0 2mm;
+      text-transform: uppercase;
+    }
+    .receipt-80 .bill-row {
+      font-size: 10pt;
+      font-weight: 600;
+      margin-bottom: 1.5mm;
+      display: flex;
+      justify-content: space-between;
+    }
+    .receipt-80 .row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 8.5pt;
+      margin: 0.5mm 0;
+    }
+    .receipt-80 .dashed {
+      border-top: 0.3mm dashed #222;
+      margin: 1.5mm 0;
+    }
+    .receipt-80 .solid {
+      border-top: 0.3mm solid #222;
+      margin: 1.5mm 0;
+    }
+
+    /* table header & items – compact, no overflow */
+    .receipt-80 .tbl-head {
+      display: flex;
+      font-weight: 700;
+      font-size: 8.5pt;
+      padding: 1mm 0;
+      border-bottom: 0.2mm solid #aaa;
+    }
+    .receipt-80 .item-row {
+      display: flex;
+      font-size: 8.5pt;
+      margin: 0.8mm 0;
+      align-items: baseline;
+    }
+    .receipt-80 .col-item {
+      flex: 1 1 auto;
+      padding-right: 1mm;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    .receipt-80 .col-qty {
+      width: 9mm;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .receipt-80 .col-price {
+      width: 14mm;
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .receipt-80 .col-amount {
+      width: 16mm;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .receipt-80 .discount-row,
+    .receipt-80 .delivery-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9pt;
+      margin: 0.5mm 0;
+    }
+    .receipt-80 .vat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11pt;
+      font-weight: 700;
+      margin: 0.5mm 0;
+    }
+    .receipt-80 .gtotal {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14pt;
+      font-weight: 800;
+      margin: 1.5mm 0;
+      letter-spacing: 0.5px;
+    }
+    .receipt-80 .items-qty {
+      font-size: 10pt;
+      margin: 1mm 0;
+    }
+    .receipt-80 .footer {
+      text-align: center;
+      font-size: 7.5pt;
+      margin-top: 2mm;
+      color: #333;
+      border-top: 0.2mm dashed #aaa;
+      padding-top: 1.5mm;
+    }
+
+    /* print: exactly 80mm, no margins, no extra white */
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+        margin: 0;
+        display: block;
+      }
+      .receipt-80 {
+        width: 80mm;
+        max-width: 80mm;
+        margin: 0 auto;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 2mm 3mm 4mm;
+      }
+      .receipt-80 .logo {
+        width: 36mm;
+        height: 36mm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== 80mm RECEIPT – EXACT 80mm WIDTH, NO SIDE WHITE ===== -->
+  <div class="receipt-80" id="receipt80">
+
+    <!-- LOGO (placeholder – replace with actual base64 if needed) -->
+    <img class="logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%23f9f9f9'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='28' font-weight='bold' fill='%2300C7C7' text-anchor='middle' dy='.3em'%3EASH%3C/text%3E%3Ctext x='50%25' y='72%25' font-family='Arial' font-size='13' fill='%23555' text-anchor='middle'%3EBAKES%3C/text%3E%3C/svg%3E"
+         alt="ASH BAKES logo">
+
+    <div class="shop-name">AL SEEB</div>
+    <div class="addr">Sultanate of Oman</div>
+    <div class="phone">97060084</div>
+
+    <div class="hall">Take Away Hall</div>
+
+    <div class="bill-row">
+      <span>Bill no : 1</span>
+      <span>Ticket #: 8</span>
+    </div>
+
+    <div class="row">
+      <span>Date : 04/08/2026</span>
+      <span>Time : 05:46:47 PM</span>
+    </div>
+    <div class="row">
+      <span>Afternoon</span>
+      <span>Admin</span>
+    </div>
+
+    <div class="dashed"></div>
+
+    <!-- table header -->
+    <div class="tbl-head">
+      <div class="col-item">Item</div>
+      <div class="col-qty">Qty</div>
+      <div class="col-price">Price</div>
+      <div class="col-amount">Amount</div>
+    </div>
+
+    <div class="dashed"></div>
+
+    <!-- items (sample) -->
+    <div class="item-row">
+      <div class="col-item">Chocolate Cupcakes</div>
+      <div class="col-qty">1</div>
+      <div class="col-price">5.500</div>
+      <div class="col-amount">5.500</div>
+    </div>
+    <div class="item-row">
+      <div class="col-item">Lemon Passion Cupcakes</div>
+      <div class="col-qty">1</div>
+      <div class="col-price">5.500</div>
+      <div class="col-amount">5.500</div>
+    </div>
+
+    <div class="dashed"></div>
+
+    <!-- VAT -->
+    <div class="vat-row">
+      <span>VAT Amt (5%)</span>
+      <span>0.825</span>
+    </div>
+
+    <div class="solid"></div>
+
+    <!-- GRAND TOTAL -->
+    <div class="gtotal">
+      <span>GTotal</span>
+      <span>17.325</span>
+    </div>
+
+    <div class="dashed"></div>
+
+    <div class="items-qty">Items / Qty :    3 / 3</div>
+
+    <div class="dashed"></div>
+
+    <div class="footer">Generated by ASH BAKES POS System</div>
+  </div>
+
+  <!-- tiny script to ensure print locks to 80mm -->
+  <script>
+    (function() {
+      // extra insurance: when printing, kill any margin / extra space
+      const style = document.createElement('style');
+      style.textContent = `
+        @media print {
+          body { margin: 0 !important; padding: 0 !important; background: white !important; }
+          .receipt-80 {
+            width: 80mm !important;
+            max-width: 80mm !important;
+            margin: 0 auto !important;
+            padding: 2mm 3mm 4mm !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+
+      // optional: auto-print after load – uncomment next line if you want
+      // window.print();
+    })();
+  </script>
+
+</body>
+</html>
+This is a complete HTML document for a point-of-sale (POS) system designed for a bakery. It includes a full interface for managing products, processing orders, and generating receipts.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ASH BAKES POS</title>
