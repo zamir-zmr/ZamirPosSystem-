@@ -349,11 +349,6 @@
     <!-- ===== Security Password (Bill Delete Protection) ===== -->
     <button class="btn" style="background:#0f172a; width:100%; margin-bottom:10px" onclick="openPwManageModal()">🔒 SECURITY PASSWORD</button>
 
-    <!-- ===== Direct Thermal Printer (USB / Bluetooth, no print dialog) ===== -->
-    <button class="btn" style="background:#0284c7; width:100%; margin-bottom:10px" onclick="connectPrinterUSB()">🔌 CONNECT PRINTER (USB)</button>
-    <button class="btn" style="background:#0284c7; width:100%; margin-bottom:10px" onclick="connectPrinterBT()">🔵 CONNECT PRINTER (BLUETOOTH)</button>
-    <button class="btn" style="background:#94a3b8; width:100%; margin-bottom:10px" onclick="disconnectPrinter()">🔌 DISCONNECT PRINTER</button>
-
     <button class="btn" style="width:100%; background:var(--slate)" onclick="closeM()">CLOSE</button>
 </div>
 
@@ -1075,29 +1070,81 @@ function processPastedJson() {
     }
     function loadSavedLogo() { let savedPhoto = localStorage.getItem('savedPhotoUrl'); if (savedPhoto) displayLogo(savedPhoto); }
 
+    function escReceiptHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function buildReceiptHTML(data) {
+        const { logo, billLine, dateStr, timeStr, shiftText, custPhone, items, discPerc, discAmt, vat, delivery, grand, itemsCount, totalQty } = data;
+
+        let itemsHtml = items.map(it => `
+            <div class="item-row">
+                <div class="col-item">${escReceiptHtml(it.name)}</div>
+                <div class="col-qty">${it.qty}</div>
+                <div class="col-price">${Number(it.price).toFixed(3)}</div>
+                <div class="col-amount">${(Number(it.price) * Number(it.qty)).toFixed(3)}</div>
+            </div>`).join('');
+
+        let discHtml = discAmt > 0 ? `<div class="discount-row"><span>Discount (${discPerc}%)</span><span>-${discAmt.toFixed(3)}</span></div>` : '';
+        let dlvHtml = delivery > 0 ? `<div class="delivery-row"><span>Delivery Charges</span><span>${delivery.toFixed(3)}</span></div>` : '';
+        let custHtml = custPhone ? `<div class="row"><span>Customer : ${escReceiptHtml(custPhone)}</span></div>` : '';
+        let logoHtml = logo ? `<img class="logo" src="${logo}" onerror="this.style.display='none'">` : '';
+
+        return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+html, body { background:#fff; }
+body { font-family: Helvetica, Arial, sans-serif; width:80mm; padding:4mm 5mm 6mm; color:#000; }
+.logo { display:block; width:50mm; height:50mm; object-fit:contain; margin:0 auto 3mm; }
+.shopname { font-size:10pt; text-align:center; }
+.addr { font-size:8pt; text-align:center; }
+.phone { font-size:8pt; text-align:center; margin-bottom:2mm; }
+.hall { font-size:12pt; font-weight:700; text-align:center; margin:2mm 0 3mm; }
+.billrow { font-size:10pt; margin-bottom:1.5mm; }
+.row { display:flex; justify-content:space-between; font-size:8pt; margin:0.5mm 0; }
+.dashed { border-top:0.3mm dashed #000; margin:1.5mm 0; }
+.solid { border-top:0.3mm solid #000; margin:1.5mm 0; }
+.tblhead { display:flex; font-weight:700; font-size:8pt; }
+.item-row { display:flex; font-size:8pt; margin:1mm 0; align-items:flex-start; }
+.col-item { flex:1 1 auto; padding-right:1mm; word-wrap:break-word; }
+.col-qty { width:9mm; text-align:right; }
+.col-price { width:14mm; text-align:right; }
+.col-amount { width:16mm; text-align:right; }
+.discount-row, .delivery-row { display:flex; justify-content:space-between; font-size:9pt; margin:1mm 0; }
+.vat-row { display:flex; justify-content:space-between; font-size:11pt; font-weight:700; margin:1mm 0; }
+.gtotal { display:flex; font-size:14pt; font-weight:700; margin:2mm 0; }
+.gtotal .label { margin-right:3mm; }
+.itemsqty { font-size:10pt; margin:1mm 0; }
+.footer { text-align:center; font-size:7pt; margin-top:2mm; }
+@media print { @page { size:80mm auto; margin:0; } body { width:80mm; } }
+</style></head>
+<body>
+${logoHtml}
+<div class="shopname">AL SEEB</div>
+<div class="addr">Sultanate of oman</div>
+<div class="phone">97060084</div>
+<div class="hall">Take Away Hall</div>
+<div class="billrow">${billLine}</div>
+<div class="row"><span>Date : ${dateStr}</span><span>Time : ${timeStr}</span></div>
+<div class="row"><span>${shiftText}</span><span>Admin</span></div>
+${custHtml}
+<div class="dashed"></div>
+<div class="tblhead"><div class="col-item">Item</div><div class="col-qty">Qty</div><div class="col-price">Price</div><div class="col-amount">Amount</div></div>
+<div class="dashed"></div>
+${itemsHtml}
+<div class="dashed"></div>
+${discHtml}
+<div class="vat-row"><span>VAT Amt (5%)</span><span>${vat.toFixed(3)}</span></div>
+${dlvHtml}
+<div class="solid"></div>
+<div class="gtotal"><span class="label">GTotal</span><span>${grand.toFixed(3)}</span></div>
+<div class="dashed"></div>
+<div class="itemsqty">Items / Qty :    ${itemsCount} / ${totalQty}</div>
+<div class="dashed"></div>
+<div class="footer">Generated by ASH BAKES POS System</div>
+</body></html>`;
+    }
+
     async function executePrint() {
-    const { jsPDF } = window.jspdf;
-    const itemRowH = 6; 
-    const headH = 105; 
-    const footH = 65;
-    const LEFT = 5, CENTER = 40, RIGHT = 75;
-    const ITEM_COL_WIDTH = 33; // Item column ki max width (Qty column shuru hone se pehle)
-    const LINE_H = 4;          // item name ki har line ki height
-
-    // Item names ko wrap karke line count nikalein (max 3 lines per item) taake page height sahi bane
-    const scratchDoc = new jsPDF({ unit: 'mm', format: [80, 200] });
-    scratchDoc.setFont("helvetica", "normal"); scratchDoc.setFontSize(8);
-    const itemLinesArr = cart.map(item => {
-        let lines = scratchDoc.splitTextToSize(String(item.name), ITEM_COL_WIDTH);
-        if (lines.length > 3) lines = lines.slice(0, 3);
-        return lines;
-    });
-    const itemsTotalHeight = itemLinesArr.reduce((sum, lines) => sum + Math.max(itemRowH, lines.length * LINE_H), 0);
-
-    const dynH = headH + itemsTotalHeight + footH + 20; 
-    const doc = new jsPDF({ unit: 'mm', format: [80, dynH] });
-    let y = 10;
-    
     const now = new Date(); 
     const dateStr = now.toLocaleDateString('en-GB'); 
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); 
@@ -1121,109 +1168,36 @@ function processPastedJson() {
 
     // Logo
     let savedPhoto = localStorage.getItem('savedPhotoUrl');
-    if (savedPhoto) { try { doc.addImage(savedPhoto, 'PNG', 15, y, 50, 50); y += 55; } catch (e) { y += 5; } }
 
-    // Header Info
-    doc.setFontSize(10); doc.text("AL SEEB", CENTER, y, {align:'center'}); y += 4;
-    doc.setFontSize(8); doc.text("Sultanate of oman", CENTER, y, {align:'center'}); y += 4;
-    doc.text("97060084", CENTER, y, {align:'center'}); y += 6;
-    doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text("Take Away Hall", CENTER, y, {align:'center'}); y += 8;
-
-    // Bill Details
-    doc.setFontSize(10); doc.text( "Bill no: " + billCount + (currentTicket ? "   Ticket #: " + currentTicket : ""), LEFT, y); y += 5;
-    doc.setFontSize(8); doc.setFont("helvetica", "normal");
-    doc.text("Date : " + dateStr, LEFT, y); doc.text("Time : " + timeStr, RIGHT, y, {align: 'right'}); y += 4;
-    doc.text(shift + "", LEFT, y); doc.text("Admin", RIGHT, y, {align: 'right'}); y += 5;
     const custPhoneVal = (document.getElementById('cust-phone') && document.getElementById('cust-phone').value.trim()) || '';
-    if (custPhoneVal) { doc.text("Customer : " + custPhoneVal, LEFT, y); y += 5; }
 
-    // --- Professional Table Header ---
-    doc.setLineWidth(0.3);
-    doc.setLineDashPattern([1, 1], 0);
-    doc.line(LEFT, y, RIGHT, y); y += 4;
-    doc.setFont("helvetica", "bold");
-    doc.text("Item", LEFT, y);
-    doc.text("Qty", CENTER + 5, y, {align: 'right'});
-    doc.text("Price", CENTER + 18, y, {align: 'right'});
-    doc.text("Amount", RIGHT, y, {align: 'right'});
-    y += 2; doc.line(LEFT, y, RIGHT, y); y += 6;
-
-    // Items Loop
+    // Items & Calculations
     let sub = 0; let totalQty = 0;
-    doc.setFontSize(8); doc.setFont("helvetica", "normal");
-    cart.forEach((item, idx) => { 
-        let it = item.price * item.qty; sub += it; totalQty += item.qty;
-        let nameLines = itemLinesArr[idx];
-        nameLines.forEach((ln, i) => { doc.text(ln, LEFT, y + (i * LINE_H)); });
-        doc.text(item.qty.toString(), CENTER + 5, y, {align: 'right'}); 
-        doc.text(item.price.toFixed(3), CENTER + 18, y, {align: 'right'});
-        doc.text(it.toFixed(3), RIGHT, y, {align: 'right'}); 
-        y += Math.max(itemRowH, nameLines.length * LINE_H); 
-    });
+    cart.forEach(item => { sub += item.price * item.qty; totalQty += item.qty; });
 
-    // Calculations logic
     let dp = parseFloat(document.getElementById('disc-val').value) || 0, 
         dlv = parseFloat(document.getElementById('deliv-val').value) || 0; 
     let discAmt = sub * (dp / 100);
     let ad = sub - discAmt, vt = sub * 0.05, g = ad + vt + dlv;
 
-    y += 2; doc.line(LEFT, y, RIGHT, y); y += 5;
-    
-    // Summary Rows
-    doc.setFontSize(9);
-    if (discAmt > 0) {
-        doc.text("Discount (" + dp + "%)", LEFT, y);
-        doc.text("-" + discAmt.toFixed(3), RIGHT, y, {align: 'right'});
-        y += 5;
-    }
-    doc.setFontSize(11); doc.setFont("helvetica", "bold");
-    doc.text("VAT Amt (5%)", LEFT, y);
-    doc.text(vt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
-    doc.setFontSize(9); doc.setFont("helvetica", "normal");
+    const billLine = "Bill no: " + billCount + (currentTicket ? "   Ticket #: " + currentTicket : "");
 
-    if (dlv > 0) {
-        doc.text("Delivery Charges", LEFT, y);
-        doc.text(dlv.toFixed(3), RIGHT, y, {align: 'right'});
-        y += 5;
-    }
-
-    // Grand Total (Highlighted) — label left side, gap before amount, no overlap with line above
-    doc.setLineDashPattern([], 0); // Solid line for total
-    doc.line(LEFT, y, RIGHT, y); y += 8;
-    doc.setFontSize(14); doc.setFont("helvetica", "bold");
-    const gLabel = "GTotal";
-    doc.text(gLabel, LEFT, y);
-    const gLabelWidth = doc.getTextWidth(gLabel);
-    doc.text(g.toFixed(3), LEFT + gLabelWidth + 8, y);
-    y += 9;
-    
-    // Items Count Summary
-    doc.setFontSize(10); doc.setLineDashPattern([1, 1], 0);
-    doc.line(LEFT, y, RIGHT, y); y += 5;
-    doc.text("Items / Qty :    " + cart.length + " / " + totalQty, LEFT, y);
-    y += 5; doc.line(LEFT, y, RIGHT, y); y += 7;
-
-    doc.setFontSize(7); doc.setFont("helvetica", "normal");
-    doc.text("Generated by ASH BAKES POS System", CENTER, y, {align: 'center'});
-
-    const receiptData = {
-        headerTitle: "Take Away Hall",
-        billNo: billCount,
-        ticket: currentTicket,
-        date: dateStr,
-        time: timeStr,
-        shift: shift,
-        customerPhone: custPhoneVal,
+    const html = buildReceiptHTML({
+        logo: savedPhoto,
+        billLine: billLine,
+        dateStr: dateStr,
+        timeStr: timeStr,
+        shiftText: shift,
+        custPhone: custPhoneVal,
         items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
-        discPercent: dp,
+        discPerc: dp,
         discAmt: discAmt,
         vat: vt,
         delivery: dlv,
-        grandTotal: g,
+        grand: g,
         itemsCount: cart.length,
         totalQty: totalQty
-    };
+    });
 
     logSale(g.toFixed(3), billCount); 
     if (currentTicket) markTicketUsed(currentTicket);
@@ -1231,196 +1205,12 @@ function processPastedJson() {
     clearCart(); closeM();
     document.getElementById('ticketBadge').innerText = '🎫 --';
     showTicketPage();
-    printThermal(doc, receiptData);
+    printThermal(html);
 }
 
-let receiptBlobUrl = null;
-
-// ===================== DIRECT THERMAL PRINTER (USB / BLUETOOTH) =====================
-// Ek baar "Connect Printer" se pair karne ke baad, print silently (bina kisi dialog ke)
-// seedha printer ko raw ESC/POS bytes bhej diye jaate hain. Agar printer connect nahi
-// hai to purana behaviour (PDF preview modal + browser print dialog) chalta hai.
-
-let printerUSBDevice = null;
-let printerBTChar = null;
-let printerConnType = localStorage.getItem('printerConnType') || null; // 'usb' | 'bt' | null
-
-// 80mm thermal printers usually print 42-48 chars per line at normal font.
-// 58mm printers usually print 32 chars per line. Adjust this if columns look wrong on your paper.
-const ESC_LINE_WIDTH = 42;
-
-function padRight(s, w) { s = String(s); return s.length >= w ? s.slice(0, w) : s + ' '.repeat(w - s.length); }
-function padLeft(s, w) { s = String(s); return s.length >= w ? s.slice(-w) : ' '.repeat(w - s.length) + s; }
-function centerText(s, w) { s = String(s); if (s.length >= w) return s.slice(0, w); let total = w - s.length, l = Math.floor(total / 2); return ' '.repeat(l) + s + ' '.repeat(total - l); }
-function wrapText(text, width) {
-    text = String(text); let words = text.split(' '), lines = [], cur = '';
-    words.forEach(w => {
-        while (w.length > width) { if (cur) { lines.push(cur); cur = ''; } lines.push(w.slice(0, width)); w = w.slice(width); }
-        if ((cur + (cur ? ' ' : '') + w).length <= width) cur = cur ? cur + ' ' + w : w;
-        else { if (cur) lines.push(cur); cur = w; }
-    });
-    if (cur) lines.push(cur);
-    return lines.length ? lines : [''];
-}
-
-// Connect a receipt printer plugged in via USB
-async function connectPrinterUSB() {
-    if (!navigator.usb) {
-        showAppAlert('Not Supported', 'Yeh browser/device WebUSB support nahi karta. Chrome desktop ya Chrome for Android (HTTPS site par) use karein.');
-        return;
-    }
-    try {
-        const device = await navigator.usb.requestDevice({ filters: [] });
-        await device.open();
-        if (!device.configuration) await device.selectConfiguration(1);
-        await device.claimInterface(device.configuration.interfaces[0].interfaceNumber);
-        printerUSBDevice = device; printerBTChar = null;
-        printerConnType = 'usb';
-        localStorage.setItem('printerConnType', 'usb');
-        showAppAlert('Printer Connected', 'USB thermal printer connected ho gaya. Ab print silently, bina kisi dialog ke, seedha printer par jayega.');
-    } catch (e) {
-        console.error('USB printer connect failed:', e);
-        showAppAlert('Connection Failed', 'USB printer connect nahi ho paaya: ' + e.message + '\n\nAgar yeh printer pehle se Android ke Print Service (system printer) mein registered hai, to uska USB interface OS ne already claim kar rakha hai — WebUSB use nahi kar payega jab tak wo system print service disable na ho.');
-    }
-}
-
-// Connect a receipt printer paired via Bluetooth Low Energy
-async function connectPrinterBT() {
-    if (!navigator.bluetooth) {
-        showAppAlert('Not Supported', 'Yeh browser/device Web Bluetooth support nahi karta. Chrome desktop ya Chrome for Android (HTTPS site par, Bluetooth ON) use karein.');
-        return;
-    }
-    try {
-        const device = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', '49535343-fe7d-4ae5-8fa9-9fafd205e455', '0000ffe0-0000-1000-8000-00805f9b34fb']
-        });
-        const server = await device.gatt.connect();
-        const services = await server.getPrimaryServices();
-        let foundChar = null;
-        for (const service of services) {
-            const chars = await service.getCharacteristics();
-            foundChar = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
-            if (foundChar) break;
-        }
-        if (!foundChar) throw new Error('Printer par writable characteristic nahi mila');
-        printerBTChar = foundChar; printerUSBDevice = null;
-        printerConnType = 'bt';
-        localStorage.setItem('printerConnType', 'bt');
-        showAppAlert('Printer Connected', 'Bluetooth thermal printer connected ho gaya. Ab print silently, bina kisi dialog ke, seedha printer par jayega.');
-    } catch (e) {
-        console.error('Bluetooth printer connect failed:', e);
-        showAppAlert('Connection Failed', 'Bluetooth printer connect nahi ho paaya: ' + e.message);
-    }
-}
-
-function disconnectPrinter() {
-    try { if (printerUSBDevice) printerUSBDevice.close(); } catch (e) {}
-    printerUSBDevice = null; printerBTChar = null; printerConnType = null;
-    localStorage.removeItem('printerConnType');
-    showAppAlert('Disconnected', 'Printer disconnect ho gaya. Ab dobara browser ka print dialog dikhega jab tak dobara connect na karo.');
-}
-
-// Builds raw ESC/POS bytes for a receipt from plain data (no PDF/graphics involved)
-function buildEscPosReceipt(data) {
-    const W = ESC_LINE_WIDTH, QTY_W = 4, PRICE_W = 8, AMT_W = 10;
-    const NAME_W = W - QTY_W - PRICE_W - AMT_W;
-    const seg = [];
-    const add = (text, opts = {}) => seg.push({ text, bold: !!opts.bold, center: !!opts.center });
-
-    add("AL SEEB", { center: true });
-    add("Sultanate of oman", { center: true });
-    add("97060084", { center: true });
-    add("");
-    add(data.headerTitle || "Take Away Hall", { center: true, bold: true });
-    add("");
-    add("Bill no: " + data.billNo + (data.ticket ? "  Ticket #: " + data.ticket : ""));
-    add(padRight("Date: " + data.date, Math.floor(W / 2)) + padLeft("Time: " + data.time, W - Math.floor(W / 2)));
-    add(padRight(data.shift || '', Math.floor(W / 2)) + padLeft("Admin", W - Math.floor(W / 2)));
-    if (data.customerPhone) add("Customer: " + data.customerPhone);
-    add('-'.repeat(W));
-    add(padRight("Item", NAME_W) + padLeft("Qty", QTY_W) + padLeft("Price", PRICE_W) + padLeft("Amt", AMT_W), { bold: true });
-    add('-'.repeat(W));
-
-    data.items.forEach(item => {
-        let nameLines = wrapText(item.name, NAME_W);
-        let qty = parseFloat(item.qty) || 0, price = parseFloat(item.price) || 0;
-        nameLines.forEach((ln, i) => {
-            if (i === 0) add(padRight(ln, NAME_W) + padLeft(qty, QTY_W) + padLeft(price.toFixed(3), PRICE_W) + padLeft((qty * price).toFixed(3), AMT_W));
-            else add(padRight(ln, NAME_W));
-        });
-    });
-
-    add('-'.repeat(W));
-    if (data.discAmt > 0) add(padRight("Discount (" + data.discPercent + "%)", W - AMT_W) + padLeft("-" + data.discAmt.toFixed(3), AMT_W));
-    add(padRight("VAT Amt (5%)", W - AMT_W) + padLeft(data.vat.toFixed(3), AMT_W), { bold: true });
-    if (data.delivery > 0) add(padRight("Delivery Charges", W - AMT_W) + padLeft(data.delivery.toFixed(3), AMT_W));
-    add('='.repeat(W));
-    add(padRight("GTotal", W - AMT_W) + padLeft(data.grandTotal.toFixed(3), AMT_W), { bold: true });
-    add('-'.repeat(W));
-    add("Items / Qty:  " + data.itemsCount + " / " + data.totalQty);
-    add('-'.repeat(W));
-    add("Generated by ASH BAKES POS System", { center: true });
-
-    const encoder = new TextEncoder();
-    const parts = [new Uint8Array([0x1B, 0x40])]; // ESC @ initialize
-    seg.forEach(s => {
-        parts.push(new Uint8Array([0x1B, 0x61, s.center ? 0x01 : 0x00])); // ESC a align
-        parts.push(new Uint8Array([0x1B, 0x45, s.bold ? 0x01 : 0x00]));   // ESC E bold
-        parts.push(encoder.encode(s.text + "\n"));
-    });
-    parts.push(new Uint8Array([0x1B, 0x45, 0x00]));
-    parts.push(encoder.encode("\n\n\n"));
-    parts.push(new Uint8Array([0x1D, 0x56, 0x42, 0x00])); // GS V partial cut
-
-    let totalLen = parts.reduce((s, p) => s + p.length, 0);
-    let out = new Uint8Array(totalLen), offset = 0;
-    parts.forEach(p => { out.set(p, offset); offset += p.length; });
-    return out;
-}
-
-// Sends raw bytes directly to the connected printer. Returns true if sent, false if no printer connected.
-async function sendRawToPrinter(bytes) {
-    if (printerConnType === 'usb' && printerUSBDevice) {
-        const iface = printerUSBDevice.configuration.interfaces[0];
-        const ep = iface.alternate.endpoints.find(e => e.direction === 'out');
-        if (!ep) throw new Error('USB printer par OUT endpoint nahi mila');
-        const CHUNK = 4096;
-        for (let i = 0; i < bytes.length; i += CHUNK) {
-            await printerUSBDevice.transferOut(ep.endpointNumber, bytes.slice(i, i + CHUNK));
-        }
-        return true;
-    }
-    if (printerConnType === 'bt' && printerBTChar) {
-        const CHUNK = 20; // BLE MTU-safe chunk size
-        for (let i = 0; i < bytes.length; i += CHUNK) {
-            const chunk = bytes.slice(i, i + CHUNK);
-            if (printerBTChar.properties.writeWithoutResponse) await printerBTChar.writeValueWithoutResponse(chunk);
-            else await printerBTChar.writeValue(chunk);
-            await new Promise(r => setTimeout(r, 15));
-        }
-        return true;
-    }
-    return false;
-}
-
-async function printThermal(doc, receiptData) {
-    if (receiptBlobUrl) { URL.revokeObjectURL(receiptBlobUrl); receiptBlobUrl = null; }
-
-    if (printerConnType && receiptData) {
-        try {
-            const escBytes = buildEscPosReceipt(receiptData);
-            const sent = await sendRawToPrinter(escBytes);
-            if (sent) return; // Printed silently — no modal, no dialog
-        } catch (e) {
-            console.error('Direct raw print failed, falling back to print dialog:', e);
-            showAppAlert('Print Warning', 'Direct printer se print fail hua (' + e.message + '), isliye browser print dialog khul raha hai.');
-        }
-    }
-
-    // Fallback: PDF preview modal + browser print dialog (no printer connected, or raw print failed)
-    receiptBlobUrl = doc.output('bloburl');
-    document.getElementById('receiptFrame').src = receiptBlobUrl;
+function printThermal(html) {
+    const frame = document.getElementById('receiptFrame');
+    frame.srcdoc = html;
     document.getElementById('receiptOv').style.display = 'block';
     document.getElementById('receiptPrintM').style.display = 'flex';
 }
@@ -1439,8 +1229,7 @@ function closeReceiptModal() {
     document.getElementById('receiptPrintM').style.display = 'none';
     document.getElementById('receiptOv').style.display = 'none';
     const frame = document.getElementById('receiptFrame');
-    if (frame) frame.src = 'about:blank';
-    if (receiptBlobUrl) { URL.revokeObjectURL(receiptBlobUrl); receiptBlobUrl = null; }
+    if (frame) frame.srcdoc = '';
 }
 
 
@@ -2747,47 +2536,9 @@ function reprintBill(billNo, dateKey) {
                     : sales.find(s => String(s.billNo) === String(billNo));
 
     if (!b) return alert("Error: Bill data not found!");
-    
-    const { jsPDF } = window.jspdf;
-    const itemRowH = 6; 
-    const headH = 105; 
-    const footH = 85; 
-    const LEFT = 5, CENTER = 40, RIGHT = 75;
-    const ITEM_COL_WIDTH = 33; // Item column ki max width (Qty column shuru hone se pehle)
-    const LINE_H = 4;          // item name ki har line ki height
 
-    // Item names ko wrap karke line count nikalein (max 3 lines per item) taake page height sahi bane
-    const scratchDoc = new jsPDF({ unit: 'mm', format: [80, 200] });
-    scratchDoc.setFont("helvetica", "normal"); scratchDoc.setFontSize(8);
-    const itemLinesArr = b.items.map(item => {
-        let lines = scratchDoc.splitTextToSize(String(item.name), ITEM_COL_WIDTH);
-        if (lines.length > 3) lines = lines.slice(0, 3);
-        return lines;
-    });
-    const itemsTotalHeight = itemLinesArr.reduce((sum, lines) => sum + Math.max(itemRowH, lines.length * LINE_H), 0);
-
-    const dynH = headH + itemsTotalHeight + footH + 20; 
-    
-    const doc = new jsPDF({ unit: 'mm', format: [80, dynH] });
-    let y = 10;
-
-    // 1. Logo
     let savedPhoto = localStorage.getItem('savedPhotoUrl');
-    if (savedPhoto) { try { doc.addImage(savedPhoto, 'PNG', 15, y, 50, 50); y += 55; } catch (e) { y += 5; } }
 
-    // 2. Header
-    doc.setFontSize(10); doc.text("AL SEEB", CENTER, y, {align:'center'}); y += 4;
-    doc.setFontSize(8); doc.text("Sultanate of oman", CENTER, y, {align:'center'}); y += 4;
-    doc.text("97060084", CENTER, y, {align:'center'}); y += 6;
-    doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text("Take Away Hall", CENTER, y, {align:'center'}); y += 8;
-
-    // 3. Bill Details & Shift
-    doc.setFontSize(10); doc.text("Bill no : " + b.billNo, LEFT, y); y += 5;
-    doc.setFontSize(8); doc.setFont("helvetica", "normal");
-    doc.text("Date : " + b.date, LEFT, y); 
-    doc.text("Time : " + b.time, RIGHT, y, {align: 'right'}); y += 4;
-    
     // --- SHIFT DETECTION FIX (AM/PM LOGIC) ---
     let timeParts = b.time.split(' '); 
     let hhmmss = timeParts[0].split(':');
@@ -2798,102 +2549,45 @@ function reprintBill(billNo, dateKey) {
     if (ampm === "AM" && h === 12) h = 0;
 
     let currentShift = getShift(h); 
-    doc.text(currentShift + "", LEFT, y); 
-    doc.text("Admin", RIGHT, y, {align: 'right'}); y += 5;
     // ------------------------------------------
 
-    // Customer phone (agar bill mein saved hai)
     const custPhoneVal = b.customerPhone || '';
-    if (custPhoneVal) { doc.text("Customer : " + custPhoneVal, LEFT, y); y += 5; }
 
-    // 4. Table Header
-    doc.setLineWidth(0.3); doc.setLineDashPattern([1, 1], 0);
-    doc.line(LEFT, y, RIGHT, y); y += 4;
-    doc.setFont("helvetica", "bold");
-    doc.text("Item", LEFT, y);
-    doc.text("Qty", CENTER + 5, y, {align: 'right'});
-    doc.text("Price", CENTER + 18, y, {align: 'right'});
-    doc.text("Amount", RIGHT, y, {align: 'right'});
-    y += 2; doc.line(LEFT, y, RIGHT, y); y += 6;
-
-    // 5. Items Loop & Sub-Total
+    // Items Loop & Sub-Total
     let subTotal = 0; let totalQty = 0;
-    doc.setFontSize(8); doc.setFont("helvetica", "normal");
-    b.items.forEach((item, idx) => { 
+    b.items.forEach(item => { 
         let q = parseFloat(item.qty) || 0;
         let p = parseFloat(item.price) || 0;
-        let itTotal = q * p; 
-        subTotal += itTotal; totalQty += q;
-        let nameLines = itemLinesArr[idx];
-        nameLines.forEach((ln, i) => { doc.text(ln, LEFT, y + (i * LINE_H)); });
-        doc.text(q.toString(), CENTER + 5, y, {align: 'right'}); 
-        doc.text(p.toFixed(3), CENTER + 18, y, {align: 'right'});
-        doc.text(itTotal.toFixed(3), RIGHT, y, {align: 'right'}); 
-        y += Math.max(itemRowH, nameLines.length * LINE_H); 
+        subTotal += q * p; totalQty += q;
     });
 
-    y += 2; doc.line(LEFT, y, RIGHT, y); y += 5;
-    
-    // 6. CALCULATIONS (DESIGN MATCH)
+    // CALCULATIONS (DESIGN MATCH)
     let dP = parseFloat(b.discountPerc) || 0;
     let dAmt = subTotal * (dP / 100);
     let afterDisc = subTotal - dAmt;
     let vAmt = afterDisc * 0.05; 
     let dlv = parseFloat(b.deliveryCharges) || 0;
 
-    doc.setFontSize(9);
-    if (dAmt > 0) {
-        doc.text("Discount (" + dP + "%)", LEFT, y);
-        doc.text("-" + dAmt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
-    }
-    
-    doc.setFontSize(11); doc.setFont("helvetica", "bold");
-    doc.text("VAT Amt (5%)", LEFT, y);
-    doc.text(vAmt.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
-    doc.setFontSize(9); doc.setFont("helvetica", "normal");
+    const billLine = "Bill no : " + b.billNo;
 
-    if (dlv > 0) {
-        doc.text("Delivery Charges", LEFT, y);
-        doc.text(dlv.toFixed(3), RIGHT, y, {align: 'right'}); y += 5;
-    }
-
-    // 7. Grand Total — label left side, gap before amount, no overlap with line above
-    doc.setLineDashPattern([], 0); 
-    doc.line(LEFT, y, RIGHT, y); y += 8;
-    doc.setFontSize(14); doc.setFont("helvetica", "bold");
-    const gLabel = "GTotal";
-    doc.text(gLabel, LEFT, y);
-    const gLabelWidth = doc.getTextWidth(gLabel);
-    doc.text(parseFloat(b.amount).toFixed(3), LEFT + gLabelWidth + 8, y);
-    y += 9;
-    
-    // 8. Footer
-    doc.setFontSize(10); doc.setLineDashPattern([1, 1], 0);
-    doc.line(LEFT, y, RIGHT, y); y += 5;
-    doc.text("Items / Qty :    " + b.items.length + " / " + totalQty, LEFT, y);
-    y += 5; doc.line(LEFT, y, RIGHT, y); y += 7;
-    doc.setFontSize(7); doc.setFont("helvetica", "normal");
-    doc.text("Generated by ASH BAKES POS System", CENTER, y, {align: 'center'});
-
-    const reprintData = {
-        headerTitle: "Take Away Hall",
-        billNo: b.billNo,
-        ticket: null,
-        date: b.date,
-        time: b.time,
-        shift: currentShift,
-        customerPhone: custPhoneVal,
-        items: b.items.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
-        discPercent: dP,
+    const html = buildReceiptHTML({
+        logo: savedPhoto,
+        billLine: billLine,
+        dateStr: b.date,
+        timeStr: b.time,
+        shiftText: currentShift,
+        custPhone: custPhoneVal,
+        items: b.items.map(i => ({ name: i.name, qty: parseFloat(i.qty) || 0, price: parseFloat(i.price) || 0 })),
+        discPerc: dP,
         discAmt: dAmt,
         vat: vAmt,
         delivery: dlv,
-        grandTotal: parseFloat(b.amount),
+        grand: parseFloat(b.amount),
         itemsCount: b.items.length,
         totalQty: totalQty
-    };
+    });
 
-    printThermal(doc, reprintData);
+    printThermal(html);
 }
 
 
