@@ -1242,13 +1242,13 @@ function downloadReceiptPDF() {
     const doc = frame.contentDocument || frame.contentWindow.document;
     const receiptEl = doc.querySelector('.receipt') || doc.body;
 
-    html2canvas(receiptEl, { scale: 3, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
+    html2canvas(receiptEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+        const imgData = canvas.toDataURL('image/jpeg', 0.6);
         const widthMm = 80;
         const heightMm = (canvas.height * widthMm) / canvas.width;
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ unit: 'mm', format: [widthMm, heightMm] });
-        pdf.addImage(imgData, 'PNG', 0, 0, widthMm, heightMm);
+        const pdf = new jsPDF({ unit: 'mm', format: [widthMm, heightMm], compress: true });
+        pdf.addImage(imgData, 'JPEG', 0, 0, widthMm, heightMm, undefined, 'FAST');
 
         const dateStr = (window.currentReceiptDateStr || new Date().toLocaleDateString('en-GB')).replace(/\//g, '-');
         const billNo = window.currentReceiptBillNo || '';
