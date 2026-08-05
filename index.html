@@ -6,6 +6,7 @@
     <title>ASH BAKES POS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -395,6 +396,7 @@
         </div>
         <div style="display:flex; gap:14px; padding:16px 22px; flex-shrink:0;">
             <button class="btn" style="background:var(--primary); margin:0; flex:1; padding:16px; font-size:16px; font-weight:700;" onclick="confirmReceiptPrint()">🖨️ Print</button>
+            <button class="btn" style="background:#10b981; margin:0; flex:1; padding:16px; font-size:16px; font-weight:700;" onclick="downloadReceiptPDF()">⬇️ PDF</button>
             <button class="btn" style="background:var(--slate); margin:0; flex:1; padding:16px; font-size:16px; font-weight:700;" onclick="closeReceiptModal()">Cancel</button>
         </div>
     </div>
@@ -1213,14 +1215,16 @@ ${dlvHtml}
     clearCart(); closeM();
     document.getElementById('ticketBadge').innerText = '🎫 --';
     showTicketPage();
-    printThermal(html);
+    printThermal(html, billCount, dateStr);
 }
 
-function printThermal(html) {
+function printThermal(html, billNo, dateStr) {
     const frame = document.getElementById('receiptFrame');
     frame.srcdoc = html;
     document.getElementById('receiptOv').style.display = 'block';
     document.getElementById('receiptPrintM').style.display = 'flex';
+    window.currentReceiptBillNo = billNo || '';
+    window.currentReceiptDateStr = dateStr || new Date().toLocaleDateString('en-GB');
 }
 
 function confirmReceiptPrint() {
@@ -1231,6 +1235,29 @@ function confirmReceiptPrint() {
     } catch (e) {
         console.error('Print failed:', e);
     }
+}
+
+function downloadReceiptPDF() {
+    const frame = document.getElementById('receiptFrame');
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    const receiptEl = doc.querySelector('.receipt') || doc.body;
+
+    html2canvas(receiptEl, { scale: 3, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const widthMm = 80;
+        const heightMm = (canvas.height * widthMm) / canvas.width;
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: 'mm', format: [widthMm, heightMm] });
+        pdf.addImage(imgData, 'PNG', 0, 0, widthMm, heightMm);
+
+        const dateStr = (window.currentReceiptDateStr || new Date().toLocaleDateString('en-GB')).replace(/\//g, '-');
+        const billNo = window.currentReceiptBillNo || '';
+        const fileName = `${dateStr} Ash Bakes Bill no. ${billNo}.pdf`;
+        pdf.save(fileName);
+    }).catch(e => {
+        console.error('PDF generation failed:', e);
+        alert('PDF download failed. Please try again.');
+    });
 }
 
 function closeReceiptModal() {
@@ -2595,7 +2622,7 @@ function reprintBill(billNo, dateKey) {
         totalQty: totalQty
     });
 
-    printThermal(html);
+    printThermal(html, b.billNo, b.date);
 }
 
 
