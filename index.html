@@ -6,7 +6,6 @@
     <title>ASH BAKES POS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -396,7 +395,6 @@
         </div>
         <div style="display:flex; gap:14px; padding:16px 22px; flex-shrink:0;">
             <button class="btn" style="background:var(--primary); margin:0; flex:1; padding:16px; font-size:16px; font-weight:700;" onclick="confirmReceiptPrint()">🖨️ Print</button>
-            <button class="btn" style="background:#0f766e; margin:0; flex:0.7; padding:16px; font-size:14px; font-weight:700;" onclick="downloadReceiptPDF()">⬇ PDF</button>
             <button class="btn" style="background:var(--slate); margin:0; flex:1; padding:16px; font-size:16px; font-weight:700;" onclick="closeReceiptModal()">Cancel</button>
         </div>
     </div>
@@ -1093,39 +1091,36 @@ function processPastedJson() {
         return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
 <style>
-@page { size:80mm auto; margin:0; }
 * { margin:0; padding:0; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-html { width:80mm; }
-html, body { background:#fff; }
-body { width:80mm !important; max-width:80mm !important; font-family:'Courier New', Consolas, monospace; color:#000; margin:0 auto !important; }
-.receipt { width:80mm !important; max-width:80mm !important; padding:3mm 4mm; margin:0 auto; }
-.logo { display:block; width:44mm; height:44mm; object-fit:contain; margin:0 auto 2mm; }
-.shopname { font-size:10pt; font-weight:700; text-align:center; }
+html, body { background:#fff; width:100%; height:100%; }
+body { font-family: Helvetica, Arial, sans-serif; color:#000; display:flex; justify-content:center; align-items:flex-start; }
+.receipt { width:80mm; max-width:80mm; padding:4mm 5mm 6mm; }
+.logo { display:block; width:50mm; height:50mm; object-fit:contain; margin:0 auto 3mm; }
+.shopname { font-size:10pt; text-align:center; }
 .addr { font-size:8pt; text-align:center; }
 .phone { font-size:8pt; text-align:center; margin-bottom:2mm; }
-.hall { font-size:11pt; font-weight:700; text-align:center; margin:2mm 0 3mm; }
-.billrow { font-size:9pt; margin-bottom:1.5mm; }
+.hall { font-size:12pt; font-weight:700; text-align:center; margin:2mm 0 3mm; }
+.billrow { font-size:10pt; margin-bottom:1.5mm; }
 .row { display:flex; justify-content:space-between; font-size:8pt; margin:0.5mm 0; }
 .dashed { border-top:0.3mm dashed #000; margin:1.5mm 0; }
 .solid { border-top:0.3mm solid #000; margin:1.5mm 0; }
 .tblhead { display:flex; font-weight:700; font-size:8pt; }
 .item-row { display:flex; font-size:8pt; margin:1mm 0; align-items:flex-start; }
-.col-item { flex:1 1 auto; padding-right:1mm; word-wrap:break-word; overflow-wrap:break-word; }
-.col-qty { width:8mm; flex-shrink:0; text-align:right; }
-.col-price { width:13mm; flex-shrink:0; text-align:right; }
-.col-amount { width:15mm; flex-shrink:0; text-align:right; }
+.col-item { flex:1 1 auto; padding-right:1mm; word-wrap:break-word; }
+.col-qty { width:9mm; text-align:right; }
+.col-price { width:14mm; text-align:right; }
+.col-amount { width:16mm; text-align:right; }
 .discount-row, .delivery-row { display:flex; justify-content:space-between; font-size:9pt; margin:1mm 0; }
-.vat-row { display:flex; justify-content:space-between; font-size:10pt; font-weight:700; margin:1mm 0; }
-.gtotal { display:flex; justify-content:space-between; font-size:13pt; font-weight:700; margin:2mm 0; }
-.itemsqty { font-size:9pt; margin:1mm 0; }
+.vat-row { display:flex; justify-content:space-between; font-size:11pt; font-weight:700; margin:1mm 0; }
+.gtotal { display:flex; font-size:14pt; font-weight:700; margin:2mm 0; }
+.gtotal .label { margin-right:3mm; }
+.itemsqty { font-size:10pt; margin:1mm 0; }
 .footer { text-align:center; font-size:7pt; margin-top:2mm; }
 @media print {
-  html, body { width:80mm !important; max-width:80mm !important; height:auto !important; margin:0 !important; padding:0 !important; }
-  .receipt { width:80mm !important; max-width:80mm !important; margin:0 !important; }
-}
-@media screen {
-  body { display:flex; justify-content:center; background:#e5e5e5; padding:6mm 0; }
-  .receipt { box-shadow:0 1mm 3mm rgba(0,0,0,0.15); }
+  @page { size:80mm auto; margin:0; }
+  html, body { width:100%; height:100%; }
+  body { display:flex; justify-content:center; align-items:flex-start; }
+  .receipt { width:80mm; }
 }
 </style></head>
 <body>
@@ -1228,61 +1223,14 @@ function printThermal(html) {
     document.getElementById('receiptPrintM').style.display = 'flex';
 }
 
-// Renders the receipt iframe's .receipt element to a canvas and builds a jsPDF
-// document sized to EXACTLY [80mm x contentHeight] -- never A4/Letter -- so the
-// PDF page box itself has zero side margins, regardless of OS/browser print settings.
-async function generateThermalPDF() {
+function confirmReceiptPrint() {
     const frame = document.getElementById('receiptFrame');
-    const frameDoc = frame.contentDocument || frame.contentWindow.document;
-    const receiptEl = frameDoc.querySelector('.receipt');
-    if (!receiptEl) throw new Error('Receipt content not found');
-
-    const canvas = await html2canvas(receiptEl, {
-        scale: 3,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        windowWidth: receiptEl.scrollWidth,
-        windowHeight: receiptEl.scrollHeight
-    });
-
-    const pdfWidthMm = 80; // fixed 80mm roll width
-    const pdfHeightMm = (canvas.height / canvas.width) * pdfWidthMm; // dynamic, content-fit height
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: [pdfWidthMm, pdfHeightMm] // custom format -> never defaults to a4/letter
-    });
-
-    doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidthMm, pdfHeightMm, undefined, 'FAST');
-    return doc;
-}
-
-async function confirmReceiptPrint() {
     try {
-        const doc = await generateThermalPDF();
-        doc.autoPrint();
-        // Opening the generated blob (whose page box is already 80mm x auto) in a new
-        // tab means the browser's PDF viewer print dialog inherits that exact page size,
-        // instead of the OS print driver's default Letter/A4 fallback.
-        window.open(doc.output('bloburl'), '_blank');
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
     } catch (e) {
-        console.error('PDF-based print failed, falling back to native print:', e);
-        const frame = document.getElementById('receiptFrame');
-        try {
-            frame.contentWindow.focus();
-            frame.contentWindow.print();
-        } catch (e2) {
-            console.error('Native print fallback also failed:', e2);
-        }
+        console.error('Print failed:', e);
     }
-}
-
-function downloadReceiptPDF() {
-    generateThermalPDF()
-        .then(doc => doc.save('Receipt.pdf'))
-        .catch(e => console.error('PDF download failed:', e));
 }
 
 function closeReceiptModal() {
