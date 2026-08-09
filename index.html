@@ -391,7 +391,10 @@
     <div class="modal" id="receiptPrintM" style="z-index:9050; width:95%; max-width:900px; height:92vh; padding:0; overflow:hidden; border-radius:20px; display:none; flex-direction:column; top:4vh; left:50%; transform:translateX(-50%); position:fixed; margin:0;">
         <div style="padding:16px 22px; border-bottom:1px solid #eef1f5; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
             <b style="font-size:18px; color:#1e293b;">Receipt Preview</b>
-            <button onclick="pickPrinter()" title="Silent print ke liye printer choose karein" style="border:none; background:#f1f5f9; color:#334155; padding:8px 12px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">⚙️ Printer</button>
+            <div style="display:flex; gap:8px;">
+                <button onclick="testQZConnection()" title="QZ Tray connection test karein" style="border:none; background:#eef2ff; color:#4338ca; padding:8px 12px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">🔌 Test</button>
+                <button onclick="pickPrinter()" title="Silent print ke liye printer choose karein" style="border:none; background:#f1f5f9; color:#334155; padding:8px 12px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">⚙️ Printer</button>
+            </div>
         </div>
         <div style="background:#f1f5f9; padding:16px; flex:1; overflow:auto; min-height:0;">
             <iframe id="receiptFrame" style="width:100%; height:100%; min-height:100%; border:none; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></iframe>
@@ -1242,8 +1245,31 @@ async function ensureQZConnected() {
     if (typeof qz === 'undefined') {
         throw new Error('QZ Tray library load nahi hui (internet check karein).');
     }
-    if (!qz.websocket.isActive()) {
-        await qz.websocket.connect();
+    if (qz.websocket.isActive()) return;
+
+    const connectOpts = { retries: 2, delay: 1 };
+    try {
+        // Try secure port first (wss://localhost:8181)
+        await qz.websocket.connect(Object.assign({}, connectOpts, { usingSecure: true }));
+    } catch (secureErr) {
+        console.warn('QZ secure connect failed, trying insecure port:', secureErr);
+        try {
+            // Fallback: insecure port (ws://localhost:8182)
+            await qz.websocket.connect(Object.assign({}, connectOpts, { usingSecure: false }));
+        } catch (insecureErr) {
+            console.error('QZ insecure connect also failed:', insecureErr);
+            throw new Error('QZ Tray se connect nahi ho paya. Confirm karein QZ Tray app taskbar/tray me chalu hai.');
+        }
+    }
+}
+
+async function testQZConnection() {
+    try {
+        await ensureQZConnected();
+        const printers = await qz.printers.find();
+        alert('✅ QZ Tray connected hai!\n\nPrinters mile: ' + (printers && printers.length ? printers.join(', ') : 'Koi nahi'));
+    } catch (e) {
+        alert('❌ QZ Tray connect nahi ho paya.\n\n' + e.message + '\n\nCheck karein:\n1) QZ Tray app installed hai? (https://qz.io/download)\n2) System tray me QZ Tray ka icon chalu dikh raha hai?\n3) Agar pehli baar hai, taskbar me koi "Allow" popup to nahi aaya jise miss kar diya?');
     }
 }
 
