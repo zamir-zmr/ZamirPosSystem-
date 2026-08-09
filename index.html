@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js"></script>
     <style>
         :root { --primary: #00C7C7; --secondary: #3b82f6; --a: #10b981; --d: #ef4444; --s: #f8fafc; --w: #f59e0b; --slate: #64748b; }
         * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -390,14 +391,16 @@
     <div class="modal" id="receiptPrintM" style="z-index:9050; width:95%; max-width:900px; height:92vh; padding:0; overflow:hidden; border-radius:20px; display:none; flex-direction:column; top:4vh; left:50%; transform:translateX(-50%); position:fixed; margin:0;">
         <div style="padding:16px 22px; border-bottom:1px solid #eef1f5; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
             <b style="font-size:18px; color:#1e293b;">Receipt Preview</b>
+            <button onclick="pickPrinter()" title="Silent print ke liye printer choose karein" style="border:none; background:#f1f5f9; color:#334155; padding:8px 12px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer;">⚙️ Printer</button>
         </div>
         <div style="background:#f1f5f9; padding:16px; flex:1; overflow:auto; min-height:0;">
             <iframe id="receiptFrame" style="width:100%; height:100%; min-height:100%; border:none; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></iframe>
         </div>
-        <div style="display:flex; gap:14px; padding:16px 22px; flex-shrink:0;">
-            <button class="btn" style="background:var(--primary); margin:0; flex:1; padding:16px; font-size:16px; font-weight:700;" onclick="confirmReceiptPrint()">🖨️ Print</button>
-            <button class="btn" style="background:#10b981; margin:0; flex:1; padding:16px; font-size:16px; font-weight:700;" onclick="downloadReceiptPDF()">⬇️ PDF</button>
-            <button class="btn" style="background:var(--slate); margin:0; flex:1; padding:16px; font-size:16px; font-weight:700;" onclick="closeReceiptModal()">Cancel</button>
+        <div style="display:flex; gap:10px; padding:16px 22px; flex-shrink:0; flex-wrap:wrap;">
+            <button class="btn" style="background:#7c3aed; margin:0; flex:1 1 100%; padding:16px; font-size:16px; font-weight:700;" onclick="silentPrintReceipt()">⚡ Silent Print (No Dialog)</button>
+            <button class="btn" style="background:var(--primary); margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="confirmReceiptPrint()">🖨️ Print</button>
+            <button class="btn" style="background:#10b981; margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="downloadReceiptPDF()">⬇️ PDF</button>
+            <button class="btn" style="background:var(--slate); margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="closeReceiptModal()">Cancel</button>
         </div>
     </div>
     <div class="modal" id="delConfirmM"><h3>Delete?</h3><div class="flex-btn"><button class="btn" style="background:var(--d)" onclick="confirmDelete()">DELETE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
@@ -1225,6 +1228,82 @@ function printThermal(html, billNo, dateStr) {
     document.getElementById('receiptPrintM').style.display = 'flex';
     window.currentReceiptBillNo = billNo || '';
     window.currentReceiptDateStr = dateStr || new Date().toLocaleDateString('en-GB');
+    window.currentReceiptHTML = html;
+}
+
+/* ============ QZ Tray Silent Printing (no browser print dialog) ============
+   Requirements on the machine that is printing:
+   1. QZ Tray desktop app must be installed & running: https://qz.io/download/
+   2. First silent print will show a one-time QZ Tray popup on that PC asking
+      to allow this site (unsigned/demo mode) — click Allow / remember choice.
+   3. Choose the target printer once via the "⚙️ Printer" button.
+============================================================================ */
+async function ensureQZConnected() {
+    if (typeof qz === 'undefined') {
+        throw new Error('QZ Tray library load nahi hui (internet check karein).');
+    }
+    if (!qz.websocket.isActive()) {
+        await qz.websocket.connect();
+    }
+}
+
+async function pickPrinter() {
+    try {
+        await ensureQZConnected();
+        const printers = await qz.printers.find();
+        if (!printers || !printers.length) {
+            alert('Koi printer nahi mila. QZ Tray app chalu hai aur printer PC se connected hai, check karein.');
+            return;
+        }
+        const list = printers.map((p, i) => `${i + 1}. ${p}`).join('\n');
+        const choice = prompt('Printer chunne ke liye number likhein:\n' + list, '1');
+        const idx = parseInt(choice, 10) - 1;
+        if (idx >= 0 && idx < printers.length) {
+            localStorage.setItem('asb_qz_printer', printers[idx]);
+            alert('✅ Printer set ho gaya: ' + printers[idx]);
+        }
+    } catch (e) {
+        console.error('QZ printer list error:', e);
+        alert('QZ Tray se connect nahi ho paya.\n\nCheck karein: QZ Tray app running hai?\n\nError: ' + e.message);
+    }
+}
+
+async function silentPrintReceipt() {
+    const html = window.currentReceiptHTML;
+    if (!html) { alert('Print karne ke liye koi receipt nahi mila.'); return; }
+
+    try {
+        await ensureQZConnected();
+
+        let printerName = localStorage.getItem('asb_qz_printer');
+        if (!printerName) {
+            printerName = await qz.printers.getDefault();
+            if (printerName) localStorage.setItem('asb_qz_printer', printerName);
+        }
+        if (!printerName) {
+            alert('Pehle "⚙️ Printer" button se printer choose karein.');
+            return;
+        }
+
+        const config = qz.configs.create(printerName, {
+            units: 'mm',
+            size: { width: 80, height: undefined },
+            scaleContent: true,
+            rasterize: true
+        });
+
+        const data = [{
+            type: 'pixel',
+            format: 'html',
+            data: html,
+            options: { pageWidth: 80, units: 'mm' }
+        }];
+
+        await qz.print(config, data);
+    } catch (e) {
+        console.error('Silent print failed:', e);
+        alert('Silent print fail ho gaya.\n\nCheck karein:\n1) QZ Tray app is PC par chalu hai\n2) Printer sahi select hai (⚙️ Printer button)\n\nError: ' + e.message);
+    }
 }
 
 function confirmReceiptPrint() {
