@@ -1240,6 +1240,34 @@ function browserPrintReceipt() {
     frame.contentWindow.print();
 }
 
+async function smartPrint() {
+    const btn = document.getElementById('smartPrintBtn');
+    const originalLabel = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Printing...';
+    try {
+        const printerName = localStorage.getItem('asb_qz_printer');
+        // Only attempt silent printing if a printer has already been set up
+        // and QZ connects quickly — otherwise go straight to the normal dialog.
+        if (printerName) {
+            const available = await isQZAvailable(2000);
+            if (available) {
+                try {
+                    await silentPrintReceipt();
+                    btn.innerHTML = originalLabel;
+                    btn.disabled = false;
+                    return;
+                } catch (e) {
+                    console.error('Silent print failed, falling back to dialog:', e);
+                }
+            }
+        }
+        browserPrintReceipt();
+    } finally {
+        btn.innerHTML = originalLabel;
+        btn.disabled = false;
+    }
+}
 
 function confirmReceiptPrint() {
     const frame = document.getElementById('receiptFrame');
