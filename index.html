@@ -1229,50 +1229,8 @@ function printThermal(html, billNo, dateStr) {
     window.currentReceiptHTML = html;
 }
 
-/* ============ Smart Printing: silent via QZ Tray when available, ============
-   otherwise falls back to the normal browser print dialog automatically —
-   one "Print" button, just like a professional POS.
 
-   One-time setup on the printing PC:
-   1. Install QZ Tray: https://qz.io/download/
-   2. Keep it running (icon shows in system tray)
-   3. Tap "⚙️ Printer Setup" once to pick the printer
-============================================================================ */
-async function qzConnectOnce(usingSecure) {
-    try {
-        if (qz.websocket.isActive()) {
-            await qz.websocket.disconnect();
-        }
-    } catch (e) { /* ignore - may not have been connected */ }
-    await qz.websocket.connect({ retries: 1, delay: 1, usingSecure: usingSecure });
-}
 
-async function ensureQZConnected() {
-    if (typeof qz === 'undefined') {
-        throw new Error('QZ Tray library load nahi hui.');
-    }
-    if (qz.websocket.isActive()) return;
-
-    try {
-        await qzConnectOnce(true); // wss://localhost:8181
-        return;
-    } catch (secureErr) {
-        console.warn('QZ secure connect failed, trying insecure:', secureErr);
-    }
-    await qzConnectOnce(false); // ws://localhost:8182
-}
-
-async function isQZAvailable(timeoutMs) {
-    try {
-        await Promise.race([
-            ensureQZConnected(),
-            new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeoutMs || 2500))
-        ]);
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
 
 
 
@@ -1282,34 +1240,6 @@ function browserPrintReceipt() {
     frame.contentWindow.print();
 }
 
-async function smartPrint() {
-    const btn = document.getElementById('smartPrintBtn');
-    const originalLabel = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Printing...';
-    try {
-        const printerName = localStorage.getItem('asb_qz_printer');
-        // Only attempt silent printing if a printer has already been set up
-        // and QZ connects quickly — otherwise go straight to the normal dialog.
-        if (printerName) {
-            const available = await isQZAvailable(2000);
-            if (available) {
-                try {
-                    await silentPrintReceipt();
-                    btn.innerHTML = originalLabel;
-                    btn.disabled = false;
-                    return;
-                } catch (e) {
-                    console.error('Silent print failed, falling back to dialog:', e);
-                }
-            }
-        }
-        browserPrintReceipt();
-    } finally {
-        btn.innerHTML = originalLabel;
-        btn.disabled = false;
-    }
-}
 
 function confirmReceiptPrint() {
     const frame = document.getElementById('receiptFrame');
