@@ -2644,7 +2644,7 @@ function reprintBill(billNo, dateKey) {
     let vAmt = afterDisc * 0.05; 
     let dlv = parseFloat(b.deliveryCharges) || 0;
 
-    const billLine = "Bill no : " + b.billNo;
+    const billLine = "Bill no: " + b.billNo + (b.ticketNo ? "   Ticket no: " + b.ticketNo : "");
 
     const html = buildReceiptHTML({
         logo: savedPhoto,
