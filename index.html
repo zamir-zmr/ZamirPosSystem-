@@ -265,7 +265,7 @@
         </div>
 
         <div style="display: flex; gap: 12px;">
-            <button onclick="executePrint()" style="flex: 2; background: #00C7C7; color: white; border: none; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 10px 20px -5px rgba(0,199,199,0.3);">PRINT RECEIPT</button>
+            <button onclick="showPreview()" style="flex: 2; background: #00C7C7; color: white; border: none; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 10px 20px -5px rgba(0,199,199,0.3);">PRINT RECEIPT</button>
             <button onclick="clearCart()" style="flex: 1; background: #f1f5f9; color: #1e293b; border: none; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 15px; cursor: pointer;">RESET</button>
         </div>
     </div>
@@ -1404,7 +1404,6 @@ function closeReceiptModal() {
 }
 
 
-    function showPreview() { if(!cart.length) return; let sub = 0, itemsHtml = ''; cart.forEach(i => { sub += i.price * i.qty; itemsHtml += `<div style="display:flex; justify-content:space-between; border-bottom: 1px dotted #eee; padding: 4px 0;"><span>${i.name} x${i.qty}</span><span>${(i.price*i.qty).toFixed(3)}</span></div>`; }); let dp = parseFloat(document.getElementById('disc-val').value) || 0, dlv = parseFloat(document.getElementById('deliv-val').value) || 0; let ad = sub - (sub * (dp / 100)), vt = sub * 0.05, g = ad + vt + dlv; document.getElementById('preview-content').innerHTML = `<b>Items:</b>${itemsHtml}<div style="margin-top:10px"><b>Total: OMR ${g.toFixed(3)}</b></div>`; show('previewM'); }
     function render() { 
         let c = document.getElementById('m'), q = document.getElementById('s').value.toLowerCase(), hb = document.getElementById('hb'); 
         c.innerHTML = ''; 
