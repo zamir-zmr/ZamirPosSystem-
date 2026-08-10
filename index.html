@@ -1191,7 +1191,7 @@ ${dlvHtml}
     let discAmt = sub * (dp / 100);
     let ad = sub - discAmt, vt = sub * 0.05, g = ad + vt + dlv;
 
-    const billLine = "Bill no: " + billCount + (currentTicket ? "   Ticket #: " + currentTicket : "");
+    const billLine = "Bill no: " + billCount + (currentTicket ? "   Ticket no: " + currentTicket : "");
 
     const html = buildReceiptHTML({
         logo: savedPhoto,
@@ -2768,7 +2768,7 @@ function exportToExcel() {
     rows.push([`Date Range: ${start} to ${end}`]);
     rows.push([]);
     rows.push(["TRANSACTION LEDGER DETAILS"]);
-    rows.push(["BILL NO", "TICKET #", "DATE", "TIME", "METHOD", "TOTAL (OMR)"]);
+    rows.push(["BILL NO", "TICKET NO", "DATE", "TIME", "METHOD", "TOTAL (OMR)"]);
 
     filtered.forEach(s => {
         let bNo = s.billNo || "---";
