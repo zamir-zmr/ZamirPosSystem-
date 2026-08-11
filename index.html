@@ -566,24 +566,7 @@
 
     <div style="padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; align-content: start;">
         
-        <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
-            <b style="color: #64748b; font-size:10px; display:block; margin-bottom:8px">📅 DATE RANGE</b>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <input type="date" id="exportStart" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
-                <input type="date" id="exportEnd" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
-                <button class="pos-btn" style="background:#3b82f6; height: 32px; font-size:11px; border-radius:6px;" onclick="setTodayDate()">TODAY</button>
-                <button class="pos-btn" style="background:#10b981; height: 32px; font-size:11px; border-radius:6px;" onclick="exportToExcel()">EXCEL</button>
-            </div>
-        </div>
 
-        <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
-            <b style="display:block; margin-bottom:8px; color: #64748b; font-size:10px;">📦 BACKUP</b>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <button class="pos-btn" style="background:#8b5cf6; height:50px; border-radius: 8px; font-size:11px; flex-direction:column;" onclick="exportFullBackup()">📤 EXPORT</button>
-                <button class="pos-btn" style="background:#475569; height:50px; border-radius: 8px; font-size:11px; flex-direction:column;" onclick="document.getElementById('importFile').click()">📥 IMPORT</button>
-            </div>
-        </div>
-                
 
         
         <div onclick="showDetails('day')" style="background: white; padding: 12px; border-radius: 12px; border-left: 5px solid #10b981; border: 1px solid #e2e8f0; border-left: 5px solid #10b981; cursor: pointer;">
@@ -606,6 +589,25 @@
         </div>
     </div>
     </div>
+
+          <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+            <b style="color: #64748b; font-size:10px; display:block; margin-bottom:8px">📅 DATE RANGE</b>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <input type="date" id="exportStart" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
+                <input type="date" id="exportEnd" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
+                <button class="pos-btn" style="background:#3b82f6; height: 32px; font-size:11px; border-radius:6px;" onclick="setTodayDate()">TODAY</button>
+                <button class="pos-btn" style="background:#10b981; height: 32px; font-size:11px; border-radius:6px;" onclick="exportToExcel()">EXCEL</button>
+            </div>
+        </div>
+
+        <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <b style="display:block; margin-bottom:8px; color: #64748b; font-size:10px;">📦 BACKUP</b>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button class="pos-btn" style="background:#8b5cf6; height:50px; border-radius: 8px; font-size:11px; flex-direction:column;" onclick="exportFullBackup()">📤 EXPORT</button>
+                <button class="pos-btn" style="background:#475569; height:50px; border-radius: 8px; font-size:11px; flex-direction:column;" onclick="document.getElementById('importFile').click()">📥 IMPORT</button>
+            </div>
+        </div>
+                
 
 <!-- <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px;">
     <div style="background: linear-gradient(135deg, #6366f1, #a855f7); padding: 15px; border-radius: 15px; color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
