@@ -2310,7 +2310,6 @@ function renderTopSellingRange(start, end){
 // 2. रिपोर्ट्स के अंदर Daily/Monthly की लिस्ट दिखाना
 function showDetails(type) {
     
-  document.getElementById('billDetailsM').style.display = 'none'; 
   document.getElementById('dateDetailsPage').style.display = 'flex';
     const list = document.getElementById('dateList');
     const title = document.getElementById('detailTitle');
@@ -3365,7 +3364,10 @@ function deleteBill(billNo, dateKey, displayLabel){
             <b id="detailTitle" style="font-size: 16px; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;">Sales Report</b>
             <span style="font-size: 10px; color: #64748b; font-weight: bold;">VIEWING DATA ANALYTICS</span>
         </div>
-        <button onclick="document.getElementById('dateDetailsPage').style.display='none'" style="border:none; background:#fef2f2; color:#ef4444; width:32px; height:32px; border-radius:8px; font-weight:bold; cursor:pointer;">✕</button>
+        
+<button onclick="document.getElementById('dateDetailsPage').style.display='none'; document.getElementById('billDetailsM').style.display='none';" style="border:none; background:#fef2f2; color:#ef4444; width:32px; height:32px; border-radius:8px; font-weight:bold; cursor:pointer;">✕</button>
+
+      
     </div>
 <div id="dateList" style="flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; align-content: start;">
     </div>
