@@ -475,19 +475,31 @@
     <div class="modal" id="previewM"><h3>Receipt</h3><div id="preview-content"></div><div class="flex-btn"><button class="btn" style="background:var(--primary)" onclick="executePrint()">PRINT</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
     <div class="ov" id="receiptOv" style="z-index:9000;" onclick="closeReceiptModal()"></div>
     <div class="modal" id="receiptPrintM" style="z-index:90500; width:95%; max-width:900px; height:92vh; padding:0; overflow:hidden; border-radius:20px; display:none; flex-direction:column; top:4vh; left:50%; transform:translateX(-50%); position:fixed; margin:0;">
-        <div style="padding:16px 22px; border-bottom:1px solid #eef1f5; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-            <b style="font-size:18px; color:#1e293b;">Receipt Preview</b>
-        </div>
-        <div style="background:#f1f5f9; padding:16px; flex:1; overflow:auto; min-height:0;">
-            <iframe id="receiptFrame" style="width:100%; height:100%; min-height:100%; border:none; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></iframe>
-        </div>
-        <div style="display:flex; gap:10px; padding:16px 22px; flex-shrink:0; flex-wrap:wrap;">
-            <button id="smartPrintBtn" class="btn" style="background:var(--primary); margin:0; flex:1 1 100%; padding:18px; font-size:17px; font-weight:700;" onclick="smartPrint()">🖨️ Print</button>
-            <button class="btn" style="background:#10b981; margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="downloadReceiptPDF()">⬇️ PDF</button>
-            <button class="btn" style="background:var(--slate); margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="closeM()">Cancel</button>
-        </div>
+        
+      
+<div style="display:flex; flex-direction:column; height:100%; max-height:100vh; overflow:hidden;">
+    <!-- Top Header -->
+    <div style="padding:12px 20px; border-bottom:1px solid #eef1f5; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; background:#fff;">
+        <b style="font-size:16px; color:#1e293b;">Receipt Preview</b>
+        <button onclick="closeM()" style="border:none; background:transparent; font-size:18px; cursor:pointer; color:#64748b;">✕</button>
     </div>
-    <div class="modal" id="delConfirmM"><h3>Delete?</h3><div class="flex-btn"><button class="btn" style="background:var(--d)" onclick="confirmDelete()">DELETE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
+
+    <!-- Receipt Frame Container (Auto-scrollable) -->
+    <div style="background:#f1f5f9; padding:12px; flex:1; overflow-y:auto; min-height:0; display:flex; justify-content:center;">
+        <iframe id="receiptFrame" style="width:100%; height:100%; min-height:350px; border:none; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></iframe>
+    </div>
+
+    <!-- Bottom Action Buttons (Always Visible at Bottom) -->
+    <div style="display:flex; gap:8px; padding:12px 16px; flex-shrink:0; background:#fff; border-top:1px solid #eef1f5; box-shadow:0 -4px 12px rgba(0,0,0,0.05);">
+        <button id="smartPrintBtn" class="btn" style="background:var(--primary, #00C7C7); color:#fff; border:none; border-radius:8px; margin:0; flex:2; padding:12px; font-size:15px; font-weight:700; cursor:pointer;" onclick="smartPrint()">🖨️ Print</button>
+        <button class="btn" style="background:#10b981; color:#fff; border:none; border-radius:8px; margin:0; flex:1; padding:12px; font-size:13px; font-weight:700; cursor:pointer;" onclick="downloadReceiptPDF()">⬇️ PDF</button>
+        <button class="btn" style="background:#64748b; color:#fff; border:none; border-radius:8px; margin:0; flex:1; padding:12px; font-size:13px; font-weight:700; cursor:pointer;" onclick="closeM()">Cancel</button>
+    </div>
+</div>
+
+      
+    
+  <div class="modal" id="delConfirmM"><h3>Delete?</h3><div class="flex-btn"><button class="btn" style="background:var(--d)" onclick="confirmDelete()">DELETE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
     <div class="modal" id="dupM"><div style="text-align:center"><h3>⚠️ Duplicated</h3><p id="dupMsg"></p><button class="btn" style="background:var(--secondary); width:100%" onclick="closeDup()">OK</button></div></div>
 
    
