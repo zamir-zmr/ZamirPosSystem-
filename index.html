@@ -281,7 +281,7 @@
 
     <div class="mw"><div id="m" class="pg"></div></div>
 
-    <div class="cart-bar" id="bottom-cart-bar" onclick="location.hash='cart'">
+    <div class="cart-bar" id="bottom-cart-bar" onclick="toggleCart(true)">
         <span id="cart-count">0 ITEMS</span>
         <span id="cart-total">OMR 0.000</span>
     </div>
@@ -292,7 +292,7 @@
             <b style="font-size: 22px; color: #1e293b; letter-spacing: -0.5px;">ORDER BILL</b>
 
         </div>
-        <button onclick="history.back()" style="border: none; background: #f1f5f9; width: 40px; height: 40px; border-radius: 12px; font-size: 20px; color: #64748b; cursor: pointer;">×</button>
+        <button onclick="toggleCart(false)" style="border: none; background: #f1f5f9; width: 40px; height: 40px; border-radius: 12px; font-size: 20px; color: #64748b; cursor: pointer;">×</button>
     </div>
 
     <div style="padding: 0 20px 12px;">
@@ -1102,9 +1102,11 @@ function processPastedJson() {
 
     window.onhashchange = () => { 
         const h = location.hash; 
-        if(!h || h==='#home') { curCat = null; toggleCart(false); render(); } 
-        else if(h.startsWith('#cat-')) { curCat = decodeURIComponent(h.replace('#cat-','')); toggleCart(false); render(); } 
-        else if(h==='#cart') toggleCart(true); 
+        // Cart panel visibility is intentionally NOT touched here anymore.
+        // It is controlled only by explicit toggleCart() calls (cart bar / close button),
+        // so it persists across Home and category navigation.
+        if(!h || h==='#home') { curCat = null; render(); } 
+        else if(h.startsWith('#cat-')) { curCat = decodeURIComponent(h.replace('#cat-','')); render(); } 
     };
 
     function getShift(hours) {
@@ -1566,7 +1568,8 @@ function updateCartUI(rebuildList = true) {
 }
 
     function changeQty(i, d) { cart[i].qty += d; if (cart[i].qty < 1) cart.splice(i, 1); updateCartUI(); }
-    function toggleCart(open) { const cp = document.getElementById('cart-panel'); if(open) cp.classList.add('open'); else cp.classList.remove('open'); }
+    let cartPanelOpen = false;
+    function toggleCart(open) { cartPanelOpen = !!open; const cp = document.getElementById('cart-panel'); if(open) cp.classList.add('open'); else cp.classList.remove('open'); }
     function closeDup() { document.getElementById('dupM').style.display = 'none'; }
     function closeM() { document.querySelectorAll('.modal, .ov').forEach(el => el.style.display = 'none'); }
     function show(id) { document.getElementById('ov').style.display = 'block'; document.getElementById(id).style.display = 'block'; }
@@ -2083,7 +2086,7 @@ function updateCartUI(rebuildList = true) {
         document.getElementById('itemRemoveBtn').style.display = 'none';
     }
     // ===================================
-    function clearCart() { cart = []; const phoneEl = document.getElementById('cust-phone'); if (phoneEl) phoneEl.value = ''; updateCartUI(); if(location.hash === '#cart') history.back(); }
+    function clearCart() { cart = []; const phoneEl = document.getElementById('cust-phone'); if (phoneEl) phoneEl.value = ''; updateCartUI(); }
     
     
     
