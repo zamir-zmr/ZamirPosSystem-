@@ -222,24 +222,11 @@
         .bill-row:active { background-color: #f1f5f9; }
         .bill-row { cursor: pointer; transition: background 0.2s; border-radius: var(--radius-sm); }
 
-        /* ===== Tablet / POS split-screen layout ===== */
-        @media (min-width: 700px) {
-            .h { padding: 16px 28px; }
-            .mw { padding: 20px 24px 20px; margin-right: 400px; margin-bottom: 0; box-sizing: border-box; }
-            .pg { grid-template-columns: repeat(4, 1fr); gap: 16px; }
-            .cart-bar { display: none; }
-            #cart-panel {
-                position: fixed; top: 0; right: 0; left: auto; bottom: 0;
-                width: 400px; height: 100%; transform: none;
-                border-radius: 24px 0 0 0; box-shadow: -16px 0 40px rgba(15,23,42,.16);
-                display: flex; flex-direction: column; overflow: hidden;
-            }
-        }
         /* ===== Desktop enhancements ===== */
         @media (min-width: 900px) {
             .h { padding: 16px 32px; }
-            .mw { padding: 22px 32px; margin-right: 460px; }
-            .pg { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+            .mw { padding: 22px 32px; }
+            .pg { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
             .cart-bar { border-radius: 22px 22px 0 0; padding: 20px 40px; }
             #cart-panel { width: 460px; right: 0; left: auto; border-radius: 28px 0 0 0; height: 100%; box-shadow: -20px 0 50px rgba(15,23,42,.18); }
             .dash-container { padding: 32px; }
@@ -571,49 +558,50 @@
     </style>
     <!-- ===== END: Live Sales Dashboard ===== -->
 
-    <div style="padding: 10px;">
-
-        <div class="data-tools-card" style="background: white; padding: 16px; border-radius: 14px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(15,23,42,.04); margin-bottom: 12px;">
-            <b style="display:flex; align-items:center; gap:6px; color: #1e293b; font-size:12px; margin-bottom:12px;">🗂️ DATA TOOLS</b>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
-                <input type="date" id="exportStart" style="width:100%; padding:9px; border-radius:8px; border: 1px solid #e2e8f0; font-size: 12px;">
-                <input type="date" id="exportEnd" style="width:100%; padding:9px; border-radius:8px; border: 1px solid #e2e8f0; font-size: 12px;">
-            </div>
-            <div class="data-tools-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                <button class="pos-btn" style="background:#3b82f6; height: 54px; border-radius: 10px; font-size:11px; flex-direction:column; gap:4px;" onclick="setTodayDate()"><span style="font-size:16px;">📅</span>TODAY</button>
-                <button class="pos-btn" style="background:#10b981; height: 54px; border-radius: 10px; font-size:11px; flex-direction:column; gap:4px;" onclick="exportToExcel()"><span style="font-size:16px;">📊</span>EXCEL</button>
-                <button class="pos-btn" style="background:#8b5cf6; height:54px; border-radius: 10px; font-size:11px; flex-direction:column; gap:4px;" onclick="exportFullBackup()"><span style="font-size:16px;">📤</span>EXPORT</button>
-                <button class="pos-btn" style="background:#475569; height:54px; border-radius: 10px; font-size:11px; flex-direction:column; gap:4px;" onclick="document.getElementById('importFile').click()"><span style="font-size:16px;">📥</span>IMPORT</button>
+    <div style="padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; align-content: start;">
+        
+        <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+            <b style="color: #64748b; font-size:10px; display:block; margin-bottom:8px">📅 DATE RANGE</b>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <input type="date" id="exportStart" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
+                <input type="date" id="exportEnd" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
+                <button class="pos-btn" style="background:#3b82f6; height: 32px; font-size:11px; border-radius:6px;" onclick="setTodayDate()">TODAY</button>
+                <button class="pos-btn" style="background:#10b981; height: 32px; font-size:11px; border-radius:6px;" onclick="exportToExcel()">EXCEL</button>
             </div>
         </div>
 
-        <div class="summary-cards-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-            <div onclick="showDetails('day')" style="background: white; padding: 14px 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #10b981; cursor: pointer;">
-                <small style="color:#64748b; font-weight:bold; font-size: 10px;">TODAY</small>
-                <h2 id="daySale" style="font-size:19px; margin:5px 0; color:#1e293b">0.000</h2>
-                <span style="color:#10b981; font-size:9px;">● Live</span>
+        <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <b style="display:block; margin-bottom:8px; color: #64748b; font-size:10px;">📦 BACKUP</b>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button class="pos-btn" style="background:#8b5cf6; height:50px; border-radius: 8px; font-size:11px; flex-direction:column;" onclick="exportFullBackup()">📤 EXPORT</button>
+                <button class="pos-btn" style="background:#475569; height:50px; border-radius: 8px; font-size:11px; flex-direction:column;" onclick="document.getElementById('importFile').click()">📥 IMPORT</button>
             </div>
+        </div>
+                <div onclick="showDetails('day')" style="background: white; padding: 12px; border-radius: 12px;
+                cursor: pointer;">
+        </div>
 
-            <div onclick="showDetails('month')" style="background: white; padding: 14px 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #3b82f6; cursor: pointer;">
-                <small style="color:#64748b; font-weight:bold; font-size: 10px;">MONTH</small>
-                <h2 id="monthSale" style="font-size:19px; margin:5px 0; color:#1e293b">0.000</h2>
-                <span style="color:#3b82f6; font-size:9px;">● Progress</span>
-            </div>
+        
+        <div onclick="showDetails('day')" style="background: white; padding: 12px; border-radius: 12px; border-left: 5px solid #10b981; border: 1px solid #e2e8f0; border-left: 5px solid #10b981; cursor: pointer;">
+            <small style="color:#64748b; font-weight:bold; font-size: 10px;">TODAY</small>
+            <h2 id="daySale" style="font-size:20px; margin:5px 0; color:#1e293b">0.000</h2>
+            <span style="color:#10b981; font-size:9px;">● Live</span>
+        </div>
 
-            <div onclick="showDetails('year')" style="background: white; padding: 14px 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #f59e0b; cursor: pointer;">
-                <small style="color:#64748b; font-weight:bold; font-size: 10px;">YEAR</small>
-                <h2 id="yearSale" style="font-size:19px; margin:5px 0; color:#1e293b">0.000</h2>
-                <span style="color:#f59e0b; font-size:9px;">● Summary</span>
-            </div>
+
+        <div onclick="showDetails('month')" style="background: white; padding: 12px; border-radius: 12px; border-left: 5px solid #3b82f6; border: 1px solid #e2e8f0; border-left: 5px solid #3b82f6; cursor: pointer;">
+            <small style="color:#64748b; font-weight:bold; font-size: 10px;">MONTH</small>
+            <h2 id="monthSale" style="font-size:20px; margin:5px 0; color:#1e293b">0.000</h2>
+            <span style="color:#3b82f6; font-size:9px;">● Progress</span>
+        </div>
+
+        <div onclick="showDetails('year')" style="background: white; padding: 12px; border-radius: 12px; border-left: 5px solid #f59e0b; border: 1px solid #e2e8f0; border-left: 5px solid #f59e0b; cursor: pointer;">
+            <small style="color:#64748b; font-weight:bold; font-size: 10px;">YEAR</small>
+            <h2 id="yearSale" style="font-size:20px; margin:5px 0; color:#1e293b">0.000</h2>
+            <span style="color:#f59e0b; font-size:9px;">● Summary</span>
         </div>
     </div>
     </div>
-    <style>
-        @media (max-width: 480px) {
-            .data-tools-grid { grid-template-columns: repeat(2, 1fr); }
-            .summary-cards-grid { grid-template-columns: 1fr; }
-        }
-    </style>
 
 <!-- <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px;">
     <div style="background: linear-gradient(135deg, #6366f1, #a855f7); padding: 15px; border-radius: 15px; color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
