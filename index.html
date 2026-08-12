@@ -477,14 +477,15 @@
     <div class="modal" id="receiptPrintM" style="z-index:90500; width:95%; max-width:900px; height:92vh; padding:0; 
       
 
-<div class="modal" id="receiptPrintM" style="z-index:90500; width:95%; max-width:900px; height:92vh; padding:0; overflow:hidden; border-radius:20px; display:none; flex-direction:column; top:4vh; left:50%; transform:translateX(-50%); position:fixed; margin:0; background:#fff;">
+
+      <div class="modal" id="receiptPrintM" style="z-index:90500; width:95%; max-width:900px; height:92vh; padding:0; overflow:hidden; border-radius:20px; display:none; flex-direction:column; top:4vh; left:50%; transform:translateX(-50%); position:fixed; margin:0; background:#fff;">
     
     <!-- 1. Top Header -->
     <div style="padding:16px 22px; border-bottom:1px solid #eef1f5; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
         <b style="font-size:18px; color:#1e293b;">Receipt Preview</b>
     </div>
 
-    <!-- 2. Main Body Split into Row Layout -->
+    <!-- 2. Main Body (Row Layout) -->
     <div style="display:flex; flex:1; overflow:hidden; min-height:0; flex-direction:row;">
         
         <!-- Left Side: Bill Preview Area -->
@@ -492,17 +493,17 @@
             <iframe id="receiptFrame" style="width:100%; max-width:80mm; height:100%; min-height:500px; border:none; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></iframe>
         </div>
 
-        <!-- Right Side: Action Buttons Area (Fixed 280px Width) -->
+        <!-- Right Side: All Buttons in ONE Single DIV -->
         <div style="width:280px; flex-shrink:0; padding:22px; display:flex; flex-direction:column; gap:12px; justify-content:flex-start; border-left:1px solid #eef1f5; background:#fff;">
             
-            <!-- Main Print Button (Top) -->
+            <!-- Print Button (Full Width) -->
             <button id="smartPrintBtn" class="btn" style="background:var(--primary); margin:0; width:100%; padding:18px; font-size:17px; font-weight:700; border-radius:10px;" onclick="smartPrint()">🖨️ Print</button>
             
-            <!-- PDF & Cancel Buttons (Bottom Row) -->
-            <div style="display:flex; gap:10px; width:100%;">
-                <button class="btn" style="background:#10b981; margin:0; flex:1; padding:14px; font-size:14px; font-weight:700; border-radius:10px;" onclick="downloadReceiptPDF()">⬇️ PDF</button>
-                <button class="btn" style="background:var(--slate); margin:0; flex:1; padding:14px; font-size:14px; font-weight:700; border-radius:10px;" onclick="closeM()">Cancel</button>
-            </div>
+            <!-- PDF Button (Full Width below Print) -->
+            <button class="btn" style="background:#10b981; margin:0; width:100%; padding:14px; font-size:14px; font-weight:700; border-radius:10px;" onclick="downloadReceiptPDF()">⬇️ PDF</button>
+            
+            <!-- Cancel Button (Full Width below PDF) -->
+            <button class="btn" style="background:var(--slate); margin:0; width:100%; padding:14px; font-size:14px; font-weight:700; border-radius:10px;" onclick="closeM()">Cancel</button>
 
         </div>
 
