@@ -461,7 +461,7 @@
         <div style="display:flex; gap:10px; padding:16px 22px; flex-shrink:0; flex-wrap:wrap;">
             <button id="smartPrintBtn" class="btn" style="background:var(--primary); margin:0; flex:1 1 100%; padding:18px; font-size:17px; font-weight:700;" onclick="smartPrint()">🖨️ Print</button>
             <button class="btn" style="background:#10b981; margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="downloadReceiptPDF()">⬇️ PDF</button>
-            <button class="btn" style="background:var(--slate); margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="closeM()">Cancel</button>
+            <button class="btn" style="background:var(--slate); margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="closeReceiptModal()">Cancel</button>
         </div>
     </div>
     <div class="modal" id="delConfirmM"><h3>Delete?</h3><div class="flex-btn"><button class="btn" style="background:var(--d)" onclick="confirmDelete()">DELETE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
@@ -1286,13 +1286,23 @@ ${dlvHtml}
         totalQty: totalQty
     });
 
-    logSale(g.toFixed(3), billCount); 
-    if (currentTicket) markTicketUsed(currentTicket);
-    currentTicket = null;
-    clearCart(); closeM();
-    document.getElementById('ticketBadge').innerText = '🎫 --';
-    showTicketPage();
+    // Show the Receipt Preview immediately so it's guaranteed to render
+    // before any finalization/navigation step runs (and even if one of
+    // those later steps throws, the preview the user asked for is already up).
+    closeM();
+    window.receiptShouldGoToTicketPage = true;
     printThermal(html, billCount, dateStr);
+
+    try {
+        logSale(g.toFixed(3), billCount);
+        if (currentTicket) markTicketUsed(currentTicket);
+        currentTicket = null;
+        clearCart();
+        const badge = document.getElementById('ticketBadge');
+        if (badge) badge.innerText = '🎫 --';
+    } catch (e) {
+        console.error('Post-print finalization failed:', e);
+    }
 }
 
 function printThermal(html, billNo, dateStr) {
@@ -1383,6 +1393,10 @@ function closeReceiptModal() {
     document.getElementById('receiptOv').style.display = 'none';
     const frame = document.getElementById('receiptFrame');
     if (frame) frame.srcdoc = '';
+    if (window.receiptShouldGoToTicketPage) {
+        window.receiptShouldGoToTicketPage = false;
+        showTicketPage();
+    }
 }
 
 
