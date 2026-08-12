@@ -17,13 +17,13 @@
         :root {
             --primary: #0d9488; --primary-dark: #0f766e; --primary-light: #14b8a6;
             --secondary: #4f46e5; --secondary-light: #6366f1;
-            --a: #16a34a; --d: #e11d48; --s: #f6f7fb; --w: #d97706; --slate: #64748b;
-            --ink: #0f172a; --ink-soft: #475569; --line: #e7eaf1; --card: #ffffff;
-            --radius-sm: 10px; --radius: 14px; --radius-lg: 20px; --radius-xl: 26px;
-            --shadow-sm: 0 1px 2px rgba(15,23,42,.05), 0 1px 3px rgba(15,23,42,.06);
-            --shadow: 0 8px 20px rgba(15,23,42,.07), 0 2px 6px rgba(15,23,42,.05);
-            --shadow-lg: 0 24px 48px rgba(15,23,42,.14), 0 8px 18px rgba(15,23,42,.08);
-            --shadow-brand: 0 10px 24px rgba(13,148,136,.24);
+            --a: #16a34a; --d: #e11d48; --s: #f4f6fb; --w: #d97706; --slate: #64748b;
+            --ink: #0f172a; --ink-soft: #475569; --line: #e6e9f0; --card: #ffffff;
+            --radius-sm: 10px; --radius: 16px; --radius-lg: 22px; --radius-xl: 28px;
+            --shadow-sm: 0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.08);
+            --shadow: 0 6px 16px rgba(15,23,42,.08), 0 2px 6px rgba(15,23,42,.06);
+            --shadow-lg: 0 20px 45px rgba(15,23,42,.16), 0 6px 16px rgba(15,23,42,.08);
+            --shadow-brand: 0 12px 28px rgba(13,148,136,.28);
         }
         * { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; box-sizing: border-box; }
         input, textarea { -webkit-user-select: text; user-select: text; }
@@ -73,24 +73,14 @@
         }
         .logo-box { display: flex; align-items: center; gap: 14px; }
         #s {
-            width: 100%; padding: 13px 16px 13px 42px; border-radius: var(--radius); border: 1.5px solid var(--line);
-            margin-top: 12px; outline: none; box-sizing: border-box; background: var(--s) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") no-repeat 14px center;
-            background-size: 17px; font-size: 14.5px; font-weight: 500;
+            width: 100%; padding: 13px 16px; border-radius: var(--radius); border: 1.5px solid var(--line);
+            margin-top: 12px; outline: none; box-sizing: border-box; background: var(--s); font-size: 14px; font-weight: 500;
         }
-        .h button { transition: transform .15s ease, filter .15s ease, box-shadow .15s ease; }
-        .h button:hover { filter: brightness(0.97); box-shadow: var(--shadow-sm); }
-        .h button:active { transform: scale(.94); }
 
         /* ===== Product grid ===== */
-        .mw { flex: 1; overflow-y: auto; padding: 16px; margin-bottom: 84px; max-width: 1400px; width: 100%; margin-left: auto; margin-right: auto; }
-
-        .pg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        @media (min-width: 480px) { .pg { grid-template-columns: repeat(3, 1fr); gap: 14px; } }
-        @media (min-width: 720px) { .pg { grid-template-columns: repeat(4, 1fr); } }
-        @media (min-width: 1100px) { .pg { grid-template-columns: repeat(5, 1fr); gap: 16px; } }
-        @media (min-width: 1400px) { .pg { grid-template-columns: repeat(6, 1fr); } }
-
-      .pc {
+        .mw { flex: 1; overflow-y: auto; padding: 16px; margin-bottom: 76px; max-width: 1400px; width: 100%; margin-left: auto; margin-right: auto; }
+        .pg { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+        .pc {
             background: var(--card); padding: 18px 12px; text-align: center; border-radius: var(--radius-lg);
             border: 1px solid var(--line); font-weight: 700; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
             position: relative; box-shadow: var(--shadow-sm);
@@ -101,31 +91,14 @@
         .cat-badge { font-size: 9px; color: var(--w); text-transform: uppercase; display: block; font-weight: 800; letter-spacing: .5px; margin-bottom: 4px; }
 
         /* ===== Cart bar / panel ===== */
-
-      .cart-bar {
-    position: fixed; 
-    bottom: 20px; /* Screen ke bottom edge se gap taaki neeche se curve dikhe */
-        margin-right: 20px;
-        margin-left: 20px;
-    left: 15px;   /* Left gap */
-    right: 15px;  /* Right gap */
-    width: auto;  /* width: 100% ki jagah auto taaki gaps properly work karein */
-    background: linear-gradient(120deg, var(--primary-dark), var(--primary));
-    color: #fff; 
-    padding: 18px 26px; 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center;
-    cursor: pointer; 
-    border-radius: 20px 20px 20px 40px; /* Charon taraf se rounded corners */
-    z-index: 1100;
-    box-shadow: 0 8px 25px rgba(13,148,136,.28); 
-    box-sizing: border-box; 
-    font-weight: 700;
-}
-
-      
-      #cart-panel {
+        .cart-bar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(120deg, var(--primary-dark), var(--primary));
+            color: #fff; padding: 18px 26px; display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; border-radius: 22px 22px 0 0; z-index: 1100;
+            box-shadow: 0 -12px 30px rgba(13,148,136,.28); box-sizing: border-box; font-weight: 700;
+        }
+        #cart-panel {
             position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; z-index: 1200; height: 90%;
             transform: translateY(100%); transition: .32s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 28px 28px 0 0; display: flex; flex-direction: column; box-shadow: var(--shadow-lg);
@@ -253,10 +226,8 @@
         @media (min-width: 900px) {
             .h { padding: 16px 32px; }
             .mw { padding: 22px 32px; }
-
-.mw { padding-right: calc(32px + 460px); }
-
-          .cart-bar { border-radius: 22px 22px 0 0; padding: 20px 40px; right: 460px; left: 0; width: auto; }
+            .pg { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+            .cart-bar { border-radius: 22px 22px 0 0; padding: 20px 40px; }
             #cart-panel { width: 460px; right: 0; left: auto; border-radius: 28px 0 0 0; height: 100%; box-shadow: -20px 0 50px rgba(15,23,42,.18); }
             .dash-container { padding: 32px; }
             .ticket-grid { grid-template-columns: repeat(8, 1fr); }
@@ -304,18 +275,18 @@
 
     <div class="mw"><div id="m" class="pg"></div></div>
 
-    <div class="cart-bar" id="bottom-cart-bar" onclick="toggleCart(true)">
+    <div class="cart-bar" id="bottom-cart-bar" onclick="location.hash='cart'">
         <span id="cart-count">0 ITEMS</span>
         <span id="cart-total">OMR 0.000</span>
     </div>
     
-<div id="cart-panel" style="font-family: 'Inter', sans-serif; display: grid; grid-template-rows: auto auto 1fr auto; height: 100dvh; background: #ffffff;">
+<div id="cart-panel" style="font-family: 'Inter', sans-serif; display: flex; flex-direction: column; height: 100dvh; background: #ffffff;">
     <div style="padding: 20px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
         <div>
             <b style="font-size: 22px; color: #1e293b; letter-spacing: -0.5px;">ORDER BILL</b>
 
         </div>
-        <button onclick="toggleCart(false)" style="border: none; background: #f1f5f9; width: 40px; height: 40px; border-radius: 12px; font-size: 20px; color: #64748b; cursor: pointer;">×</button>
+        <button onclick="history.back()" style="border: none; background: #f1f5f9; width: 40px; height: 40px; border-radius: 12px; font-size: 20px; color: #64748b; cursor: pointer;">×</button>
     </div>
 
     <div style="padding: 0 20px 12px;">
@@ -474,29 +445,20 @@
 
     <div class="modal" id="previewM"><h3>Receipt</h3><div id="preview-content"></div><div class="flex-btn"><button class="btn" style="background:var(--primary)" onclick="executePrint()">PRINT</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
     <div class="ov" id="receiptOv" style="z-index:9000;" onclick="closeReceiptModal()"></div>
-    <div class="modal" id="receiptPrintM" style="z-index:90500; width:95%; max-width:300px; 
-      height:92vh; padding:1000; 
-      overflow:hidden; border-radius:20px; display:none; flex-direction:column; top:400vh; 
-      bottom:  400vh
-      left:50%; transform:translateX(-50%); position:fixed; margin:0;">
-        
-      <div style="padding:1px 1px 1px 1px; border-bottom:1px solid #eef1f5; 
-        display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+    <div class="modal" id="receiptPrintM" style="z-index:90500; width:95%; max-width:900px; height:92vh; padding:0; overflow:hidden; border-radius:20px; display:none; flex-direction:column; top:4vh; left:50%; transform:translateX(-50%); position:fixed; margin:0;">
+        <div style="padding:16px 22px; border-bottom:1px solid #eef1f5; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
             <b style="font-size:18px; color:#1e293b;">Receipt Preview</b>
         </div>
-        <div style="background:#f1f5f9; padding:1px 1px 1px 1px; flex:1; overflow:auto; min-height:0;">
+        <div style="background:#f1f5f9; padding:16px; flex:1; overflow:auto; min-height:0;">
             <iframe id="receiptFrame" style="width:100%; height:100%; min-height:100%; border:none; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></iframe>
         </div>
-        <div style="display:flex; gap:10px; padding:22px 22px 22px 22px; flex-shrink:0; flex-wrap:wrap;
-          margin-bottom:50px
-          ">
+        <div style="display:flex; gap:10px; padding:16px 22px; flex-shrink:0; flex-wrap:wrap;">
             <button id="smartPrintBtn" class="btn" style="background:var(--primary); margin:0; flex:1 1 100%; padding:18px; font-size:17px; font-weight:700;" onclick="smartPrint()">🖨️ Print</button>
             <button class="btn" style="background:#10b981; margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="downloadReceiptPDF()">⬇️ PDF</button>
             <button class="btn" style="background:var(--slate); margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="closeM()">Cancel</button>
         </div>
     </div>
-    
-  <div class="modal" id="delConfirmM"><h3>Delete?</h3><div class="flex-btn"><button class="btn" style="background:var(--d)" onclick="confirmDelete()">DELETE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
+    <div class="modal" id="delConfirmM"><h3>Delete?</h3><div class="flex-btn"><button class="btn" style="background:var(--d)" onclick="confirmDelete()">DELETE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
     <div class="modal" id="dupM"><div style="text-align:center"><h3>⚠️ Duplicated</h3><p id="dupMsg"></p><button class="btn" style="background:var(--secondary); width:100%" onclick="closeDup()">OK</button></div></div>
 
    
@@ -531,43 +493,36 @@
         
     </div>
 </div>
-
-
-
-  <div id="reportsPage" class="full-page" style="background: #f8fafc; overflow: hidden; display: none; flex-direction: column;">
-    <!-- Header -->
-    <div class="dash-header" style="background: white; padding: 8px 15px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;">
+<div id="reportsPage" class="full-page" style="background: #f8fafc; overflow: hidden; display: none; flex-direction: column;">
+    <div class="dash-header" style="background: white; padding: 8px 15px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0;">
         <b style="font-size: 16px; color: #1e293b;">📊 SALES ANALYTICS</b>
-        <button onclick="document.getElementById('reportsPage').style.display='none'" style="border:none; background:#eff6ff; color:#3b82f6; padding:6px 15px; border-radius:8px; font-weight:bold; font-size:12px; cursor:pointer;">Back</button>
+        <button onclick="document.getElementById('reportsPage').style.display='none'" style="border:none; background:#eff6ff; color:#3b82f6; padding:6px 15px; border-radius:8px; font-weight:bold; font-size:12px">Back</button>
     </div>
 
-    <!-- Scrollable Body Container -->
-    <div style="flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 12px;">
+    <div style="flex:1; overflow-y:auto;">
 
-        <!-- 1. Live Sales Dashboard Filters -->
-        <div>
-            <div id="repFilterRow" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px;">
-                <button class="rep-filter-btn active" data-f="today" onclick="renderSalesDashboard('today')">Today</button>
-                <button class="rep-filter-btn" data-f="yesterday" onclick="renderSalesDashboard('yesterday')">Yesterday</button>
-                <button class="rep-filter-btn" data-f="week" onclick="renderSalesDashboard('week')">This Week</button>
-                <button class="rep-filter-btn" data-f="month" onclick="renderSalesDashboard('month')">This Month</button>
-                <button class="rep-filter-btn" data-f="manual" onclick="toggleRepManualPicker()">Manual 📅</button>
-            </div>
-            <div id="repManualPicker" style="display:none; gap:8px; align-items:center; margin-bottom:8px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
-                <input type="date" id="repManualStart" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-                <input type="date" id="repManualEnd" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
-                <button onclick="applyRepManualFilter()" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
-            </div>
+    <!-- ===== NEW: Live Sales Dashboard (filters + summary + chart) ===== -->
+    <div style="padding:10px 10px 0;">
+        <div id="repFilterRow" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:8px;">
+            <button class="rep-filter-btn active" data-f="today" onclick="renderSalesDashboard('today')">Today</button>
+            <button class="rep-filter-btn" data-f="yesterday" onclick="renderSalesDashboard('yesterday')">Yesterday</button>
+            <button class="rep-filter-btn" data-f="week" onclick="renderSalesDashboard('week')">This Week</button>
+            <button class="rep-filter-btn" data-f="month" onclick="renderSalesDashboard('month')">This Month</button>
+            <button class="rep-filter-btn" data-f="manual" onclick="toggleRepManualPicker()">Manual 📅</button>
         </div>
+        <div id="repManualPicker" style="display:none; gap:8px; align-items:center; margin-bottom:8px; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px; padding:8px;">
+            <input type="date" id="repManualStart" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+            <input type="date" id="repManualEnd" style="flex:1; padding:7px; border-radius:8px; border:1px solid #e2e8f0; font-size:12px;">
+            <button onclick="applyRepManualFilter()" style="background:#00C7C7; color:#fff; border:none; padding:7px 14px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">Apply</button>
+        </div>
+    </div>
 
-        <!-- Total Revenue Banner -->
-        <div style="background:linear-gradient(135deg,#1e293b,#334155); color:#fff; padding:16px; border-radius:14px; text-align:center;">
+    <div style="padding:0 10px;">
+        <div style="background:linear-gradient(135deg,#1e293b,#334155); color:#fff; padding:16px; border-radius:14px; text-align:center; margin-bottom:10px;">
             <small style="opacity:0.8; font-weight:bold; font-size:10px; letter-spacing:1px;" id="repPeriodLabel">TODAY</small>
             <div style="font-size:24px; font-weight:900;" id="repTotalRevenue">0.000 <span style="font-size:12px; opacity:0.7;">OMR</span></div>
         </div>
-
-        <!-- Orders & AOV Stats -->
-        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px;">
+        <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:10px;">
             <div style="background:#fff; border:1px solid #e2e8f0; border-left:4px solid #3b82f6; padding:10px; border-radius:10px;">
                 <small style="color:#64748b; font-weight:800; font-size:9px;">🧾 TOTAL ORDERS</small>
                 <div style="font-size:16px; font-weight:800; color:#1e293b;" id="repTotalOrders">0</div>
@@ -577,9 +532,7 @@
                 <div style="font-size:16px; font-weight:800; color:#1e293b;" id="repAov">0.000</div>
             </div>
         </div>
-
-        <!-- Payment Breakdown -->
-        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px;">
             <div style="background:#f0fdf4; border:1px solid #dcfce7; padding:8px 4px; border-radius:10px; text-align:center;">
                 <small style="color:#166534; font-weight:800; font-size:8px;">🏦 TRANSFER</small>
                 <div style="font-size:12px; font-weight:700; color:#14532d;" id="repCashTransfer">0.000</div>
@@ -597,59 +550,58 @@
                 <div style="font-size:12px; font-weight:700; color:#334155;" id="repCashPending">0.000</div>
             </div>
         </div>
+    </div>
+    <style>
+        .rep-filter-btn { white-space:nowrap; padding:9px 16px; border-radius:18px; border:1.5px solid #e6e9f0; background:#f8fafc; color:#334155; font-weight:700; font-size:12px; cursor:pointer; transition:.15s; }
+        .rep-filter-btn:hover { box-shadow:0 4px 10px rgba(15,23,42,.08); }
+        .rep-filter-btn.active { background:linear-gradient(120deg,#0f766e,#0d9488); border-color:#0d9488; color:#fff; box-shadow:0 8px 18px rgba(13,148,136,.28); }
+    </style>
+    <!-- ===== END: Live Sales Dashboard ===== -->
 
-        <!-- 2. Today / Month / Year Cards -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-            <div onclick="showDetails('day')" style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #10b981; cursor: pointer;">
-                <small style="color:#64748b; font-weight:bold; font-size: 10px; display:block;">TODAY</small>
-                <h2 id="daySale" style="font-size:18px; margin:4px 0; color:#1e293b">0.000</h2>
-                <span style="color:#10b981; font-size:9px;">● Live</span>
-            </div>
-
-            <div onclick="showDetails('month')" style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #3b82f6; cursor: pointer;">
-                <small style="color:#64748b; font-weight:bold; font-size: 10px; display:block;">MONTH</small>
-                <h2 id="monthSale" style="font-size:18px; margin:4px 0; color:#1e293b">0.000</h2>
-                <span style="color:#3b82f6; font-size:9px;">● Progress</span>
-            </div>
-
-            <div onclick="showDetails('year')" style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; border-left: 5px solid #f59e0b; cursor: pointer;">
-                <small style="color:#64748b; font-weight:bold; font-size: 10px; display:block;">YEAR</small>
-                <h2 id="yearSale" style="font-size:18px; margin:4px 0; color:#1e293b">0.000</h2>
-                <span style="color:#f59e0b; font-size:9px;">● Summary</span>
-            </div>
-        </div>
-
-        <!-- 3. Date Range Section -->
+    <div style="padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; align-content: start;">
+        
         <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
             <b style="color: #64748b; font-size:10px; display:block; margin-bottom:8px">📅 DATE RANGE</b>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <input type="date" id="exportStart" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
                 <input type="date" id="exportEnd" style="width:100%; padding:6px; border-radius:6px; border: 1px solid #ddd; font-size: 12px;">
-                <button class="pos-btn" style="background:#3b82f6; height: 36px; font-size:11px; border-radius:6px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="setTodayDate()">TODAY</button>
-                <button class="pos-btn" style="background:#10b981; height: 36px; font-size:11px; border-radius:6px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="exportToExcel()">EXCEL</button>
+                <button class="pos-btn" style="background:#3b82f6; height: 32px; font-size:11px; border-radius:6px;" onclick="setTodayDate()">TODAY</button>
+                <button class="pos-btn" style="background:#10b981; height: 32px; font-size:11px; border-radius:6px;" onclick="exportToExcel()">EXCEL</button>
             </div>
         </div>
 
-        <!-- 4. Backup Section -->
         <div style="background: white; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
             <b style="display:block; margin-bottom:8px; color: #64748b; font-size:10px;">📦 BACKUP</b>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <button class="pos-btn" style="background:#8b5cf6; height:42px; border-radius: 8px; font-size:11px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="exportFullBackup()">📤 EXPORT</button>
-                <button class="pos-btn" style="background:#475569; height:42px; border-radius: 8px; font-size:11px; color:#fff; border:none; font-weight:bold; cursor:pointer;" onclick="document.getElementById('importFile').click()">📥 IMPORT</button>
-                <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importFullBackup(event)">
+                <button class="pos-btn" style="background:#8b5cf6; height:50px; border-radius: 8px; font-size:11px; flex-direction:column;" onclick="exportFullBackup()">📤 EXPORT</button>
+                <button class="pos-btn" style="background:#475569; height:50px; border-radius: 8px; font-size:11px; flex-direction:column;" onclick="document.getElementById('importFile').click()">📥 IMPORT</button>
             </div>
         </div>
+                <div onclick="showDetails('day')" style="background: white; padding: 12px; border-radius: 12px;
+                cursor: pointer;">
+        </div>
 
+        
+        <div onclick="showDetails('day')" style="background: white; padding: 12px; border-radius: 12px; border-left: 5px solid #10b981; border: 1px solid #e2e8f0; border-left: 5px solid #10b981; cursor: pointer;">
+            <small style="color:#64748b; font-weight:bold; font-size: 10px;">TODAY</small>
+            <h2 id="daySale" style="font-size:20px; margin:5px 0; color:#1e293b">0.000</h2>
+            <span style="color:#10b981; font-size:9px;">● Live</span>
+        </div>
+
+
+        <div onclick="showDetails('month')" style="background: white; padding: 12px; border-radius: 12px; border-left: 5px solid #3b82f6; border: 1px solid #e2e8f0; border-left: 5px solid #3b82f6; cursor: pointer;">
+            <small style="color:#64748b; font-weight:bold; font-size: 10px;">MONTH</small>
+            <h2 id="monthSale" style="font-size:20px; margin:5px 0; color:#1e293b">0.000</h2>
+            <span style="color:#3b82f6; font-size:9px;">● Progress</span>
+        </div>
+
+        <div onclick="showDetails('year')" style="background: white; padding: 12px; border-radius: 12px; border-left: 5px solid #f59e0b; border: 1px solid #e2e8f0; border-left: 5px solid #f59e0b; cursor: pointer;">
+            <small style="color:#64748b; font-weight:bold; font-size: 10px;">YEAR</small>
+            <h2 id="yearSale" style="font-size:20px; margin:5px 0; color:#1e293b">0.000</h2>
+            <span style="color:#f59e0b; font-size:9px;">● Summary</span>
+        </div>
     </div>
-</div>
-
-<style>
-    .rep-filter-btn { white-space:nowrap; padding:9px 16px; border-radius:18px; border:1.5px solid #e6e9f0; background:#f8fafc; color:#334155; font-weight:700; font-size:12px; cursor:pointer; transition:.15s; }
-    .rep-filter-btn:hover { box-shadow:0 4px 10px rgba(15,23,42,.08); }
-    .rep-filter-btn.active { background:linear-gradient(120deg,#0f766e,#0d9488); border-color:#0d9488; color:#fff; box-shadow:0 8px 18px rgba(13,148,136,.28); }
-</style>
-
-                
+    </div>
 
 <!-- <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px;">
     <div style="background: linear-gradient(135deg, #6366f1, #a855f7); padding: 15px; border-radius: 15px; color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);">
@@ -1144,11 +1096,9 @@ function processPastedJson() {
 
     window.onhashchange = () => { 
         const h = location.hash; 
-        // Cart panel visibility is intentionally NOT touched here anymore.
-        // It is controlled only by explicit toggleCart() calls (cart bar / close button),
-        // so it persists across Home and category navigation.
-        if(!h || h==='#home') { curCat = null; render(); } 
-        else if(h.startsWith('#cat-')) { curCat = decodeURIComponent(h.replace('#cat-','')); render(); } 
+        if(!h || h==='#home') { curCat = null; toggleCart(false); render(); } 
+        else if(h.startsWith('#cat-')) { curCat = decodeURIComponent(h.replace('#cat-','')); toggleCart(false); render(); } 
+        else if(h==='#cart') toggleCart(true); 
     };
 
     function getShift(hours) {
@@ -1610,8 +1560,7 @@ function updateCartUI(rebuildList = true) {
 }
 
     function changeQty(i, d) { cart[i].qty += d; if (cart[i].qty < 1) cart.splice(i, 1); updateCartUI(); }
-    let cartPanelOpen = false;
-    function toggleCart(open) { cartPanelOpen = !!open; const cp = document.getElementById('cart-panel'); if(open) cp.classList.add('open'); else cp.classList.remove('open'); }
+    function toggleCart(open) { const cp = document.getElementById('cart-panel'); if(open) cp.classList.add('open'); else cp.classList.remove('open'); }
     function closeDup() { document.getElementById('dupM').style.display = 'none'; }
     function closeM() { document.querySelectorAll('.modal, .ov').forEach(el => el.style.display = 'none'); }
     function show(id) { document.getElementById('ov').style.display = 'block'; document.getElementById(id).style.display = 'block'; }
@@ -2128,7 +2077,7 @@ function updateCartUI(rebuildList = true) {
         document.getElementById('itemRemoveBtn').style.display = 'none';
     }
     // ===================================
-    function clearCart() { cart = []; const phoneEl = document.getElementById('cust-phone'); if (phoneEl) phoneEl.value = ''; updateCartUI(); }
+    function clearCart() { cart = []; const phoneEl = document.getElementById('cust-phone'); if (phoneEl) phoneEl.value = ''; updateCartUI(); if(location.hash === '#cart') history.back(); }
     
     
     
@@ -2351,8 +2300,7 @@ function renderTopSellingRange(start, end){
 
 // 2. रिपोर्ट्स के अंदर Daily/Monthly की लिस्ट दिखाना
 function showDetails(type) {
-    
-  document.getElementById('dateDetailsPage').style.display = 'flex';
+    document.getElementById('dateDetailsPage').style.display = 'flex';
     const list = document.getElementById('dateList');
     const title = document.getElementById('detailTitle');
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
@@ -3406,10 +3354,7 @@ function deleteBill(billNo, dateKey, displayLabel){
             <b id="detailTitle" style="font-size: 16px; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px;">Sales Report</b>
             <span style="font-size: 10px; color: #64748b; font-weight: bold;">VIEWING DATA ANALYTICS</span>
         </div>
-        
-<button onclick="document.getElementById('dateDetailsPage').style.display='none'; document.getElementById('billDetailsM').style.display='none';" style="border:none; background:#fef2f2; color:#ef4444; width:32px; height:32px; border-radius:8px; font-weight:bold; cursor:pointer;">✕</button>
-
-      
+        <button onclick="document.getElementById('dateDetailsPage').style.display='none'" style="border:none; background:#fef2f2; color:#ef4444; width:32px; height:32px; border-radius:8px; font-weight:bold; cursor:pointer;">✕</button>
     </div>
 <div id="dateList" style="flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; align-content: start;">
     </div>
@@ -3624,124 +3569,18 @@ function deleteBill(billNo, dateKey, displayLabel){
 </div>
 
 <style>
-/* =========================================================================
-   PREMIUM POLISH OVERRIDE LAYER
-   Purely cosmetic — no IDs, classes, handlers, or markup are altered.
-   Everything below is layered on top of the existing structure so all
-   original functionality, bindings and logic remain 100% intact.
-   ========================================================================= */
-
-/* ---- Base rhythm & feel -------------------------------------------------*/
-body { letter-spacing: -0.005em; }
-h1, h2, h3, h4 { letter-spacing: -0.02em; }
+/* ===== Premium polish overrides (non-destructive, purely cosmetic) ===== */
+button, .btn, .pos-btn { border-radius: 14px !important; }
+.modal, #settingsM, #previewM, #delConfirmM, #dupM { border-radius: 26px !important; }
+.modal h3 { font-family:'Poppins','Inter',sans-serif; }
+#delBox, #resetConfirmBox, #pwBox, #pwStepBox, #editQtyBox { border-radius: 24px !important; box-shadow: var(--shadow-lg) !important; }
+#pwMgrBox { background:#fff; }
+input[type="checkbox"] { accent-color: #0d9488; }
 ::selection { background: rgba(13,148,136,.22); }
-input[type="checkbox"] { accent-color: #0d9488; width: 16px; height: 16px; }
-*, *::before, *::after { scrollbar-width: thin; }
-
-/* ---- Buttons: consistent radius + tactile hover/press everywhere -------*/
-button, .btn, .pos-btn, .rep-filter-btn, .ticket-badge, .dash-tile, .pc,
-.report-item, .date-list-item, .bill-row {
-  transition: transform .16s cubic-bezier(.2,.8,.3,1), box-shadow .16s ease,
-              filter .16s ease, border-color .16s ease, background .16s ease !important;
-}
-button:not(.pc):not(.dash-tile):not(.q-btn):not(.ticket-cell) { border-radius: 13px !important; }
-button:not([disabled]):hover, .btn:not([disabled]):hover, .pos-btn:not([disabled]):hover {
-  filter: brightness(1.05);
-}
-button:not([disabled]):active, .btn:not([disabled]):active, .pos-btn:not([disabled]):active {
-  transform: scale(.97);
-}
-button[disabled], .btn[disabled] { cursor: not-allowed; filter: grayscale(.15); }
-
-/* ---- Modals: softer, more elevated, glass-like ---------------------------*/
-.ov { background: rgba(10,15,30,.5) !important; backdrop-filter: blur(8px) saturate(140%) !important; }
-.modal, #settingsM, #previewM, #delConfirmM, #dupM, #receiptPrintM {
-  border-radius: 24px !important;
-  box-shadow: 0 30px 60px -12px rgba(15,23,42,.35), 0 10px 24px rgba(15,23,42,.12) !important;
-  border: 1px solid rgba(255,255,255,.7) !important;
-}
-.modal h3 { font-family:'Poppins','Inter',sans-serif; font-size: 19px; }
-#delBox, #resetConfirmBox, #pwBox, #pwStepBox, #editQtyBox, #pwMgrBox {
-  border-radius: 22px !important;
-  box-shadow: 0 30px 60px -12px rgba(15,23,42,.35), 0 10px 24px rgba(15,23,42,.12) !important;
-}
-#delOv, #resetConfirmOv, #pwOv, #pwStepOv, #pwMgrOv, #receiptOv {
-  backdrop-filter: blur(8px) saturate(140%) !important;
-}
-
-/* ---- Inputs: unified, modern field styling -------------------------------*/
-input[type="text"], input[type="number"], input[type="password"], input[type="tel"],
-input[type="date"], select, textarea {
-  border-radius: 12px !important;
-}
-input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus,
-input[type="tel"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
-  border-color: #0d9488 !important; box-shadow: 0 0 0 4px rgba(13,148,136,.14) !important;
-}
-
-/* ---- Product cards: refined typography & elevation -----------------------*/
-.pc { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; }
-.pc b { font-size: 13.5px; line-height: 1.25; }
-.pc:hover { border-color: #99e6dc; }
-
-/* ---- Cart bar / panel polish ---------------------------------------------*/
-.cart-bar { backdrop-filter: saturate(140%); }
-.cart-bar:hover { filter: brightness(1.03); }
-#cart-item .q-btn, .q-btn { border-radius: 10px !important; }
-
-/* ---- Dashboard tiles: crisper grid feel -----------------------------------*/
-.dash-tile { border-radius: 20px !important; }
-.dash-container { gap: 14px; }
-
-/* ---- Report / stat cards ---------------------------------------------------*/
-.report-item, .date-list-item, .bill-row { border-radius: 14px !important; }
-.report-item:hover, .date-list-item:hover { box-shadow: var(--shadow-sm); }
-
-/* ---- Ticket grid ------------------------------------------------------------*/
-.ticket-cell { border-radius: 14px !important; }
-.ticket-tab { border-radius: 12px !important; }
-
-/* ---- Scrollbars --------------------------------------------------------------*/
 #billListPanel, #billListContent { scrollbar-width: thin; }
-
-/* ---- Reports page: soften the many inline "white card" blocks --------------*/
-#reportsPage div[style*="background: white"],
-#reportsPage div[style*="background:#fff"],
-#reportsPage div[style*="background: #fff"] {
-  box-shadow: 0 2px 8px rgba(15,23,42,.05) !important;
-}
-#reportsPage b, #reportsPage small { letter-spacing: .01em; }
-
-/* ---- Focus-visible accessibility ring ---------------------------------------*/
-button:focus-visible, .btn:focus-visible, .pc:focus-visible {
-  outline: 2px solid #0d9488 !important; outline-offset: 2px;
-}
-
-/* ---- Loading / empty states polish (if present) ------------------------------*/
-.pg:empty::after {
-  content: 'No items to show';
-  grid-column: 1 / -1; text-align: center; color: #94a3b8; font-weight: 600; padding: 40px 0;
-}
-
-/* ---- Desktop refinements ------------------------------------------------------*/
 @media (min-width: 900px) {
   body { overflow: auto; }
   .full-page .report-content, .full-page > div[style*="overflow-y:auto"] { scrollbar-width: thin; }
-  .h { position: sticky; top: 0; }
-  .modal { max-width: 420px; }
-  .pc:hover { transform: translateY(-4px) scale(1.01); }
-}
-
-/* ---- Large desktop: give breathing room to the main content ------------------*/
-@media (min-width: 1400px) {
-  .mw { padding-left: 40px; }
-}
-
-/* ---- Small phones: tighten paddings slightly ----------------------------------*/
-@media (max-width: 380px) {
-  .h { padding: 12px 14px; }
-  .mw { padding: 12px; }
-  .pc { padding: 14px 8px; }
 }
 </style>
 </body>
