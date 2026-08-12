@@ -476,24 +476,41 @@
     <div class="ov" id="receiptOv" style="z-index:9000;" onclick="closeReceiptModal()"></div>
     <div class="modal" id="receiptPrintM" style="z-index:90500; width:95%; max-width:900px; height:92vh; padding:0; 
       
-      overflow:hidden; border-radius:20px; display:none; flex-direction:row; top:4vh; left:50%; transform:translateX(-50%); position:fixed; margin:0;">
-        
-      <div style="padding:16px 22px; 
-        border-bottom:1px solid #eef1f5; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
-            <b style="font-size:18px; color:#1e293b;">Receipt Preview</b>
-        </div>
-        <div style="background:#f1f5f9; padding:16px; flex:1; overflow:auto; min-height:0;">
-            <iframe id="receiptFrame" style="width:100%; height:100%; min-height:100%; border:none; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></iframe>
-        </div>
-        <div style="display:flex; gap:10px; padding:22px 22px 22px 22px; flex-shrink:0; flex-wrap:wrap;
-          margin-bottom:50px
-          ">
-            <button id="smartPrintBtn" class="btn" style="background:var(--primary); margin:0; flex:1 1 100%; padding:18px; font-size:17px; font-weight:700;" onclick="smartPrint()">🖨️ Print</button>
-            <button class="btn" style="background:#10b981; margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="downloadReceiptPDF()">⬇️ PDF</button>
-            <button class="btn" style="background:var(--slate); margin:0; flex:1; padding:14px; font-size:14px; font-weight:700;" onclick="closeM()">Cancel</button>
-        </div>
-    </div>
+
+<div class="modal" id="receiptPrintM" style="z-index:90500; width:95%; max-width:900px; height:92vh; padding:0; overflow:hidden; border-radius:20px; display:none; flex-direction:column; top:4vh; left:50%; transform:translateX(-50%); position:fixed; margin:0; background:#fff;">
     
+    <!-- 1. Top Header -->
+    <div style="padding:16px 22px; border-bottom:1px solid #eef1f5; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+        <b style="font-size:18px; color:#1e293b;">Receipt Preview</b>
+    </div>
+
+    <!-- 2. Main Body Split into Row Layout -->
+    <div style="display:flex; flex:1; overflow:hidden; min-height:0; flex-direction:row;">
+        
+        <!-- Left Side: Bill Preview Area -->
+        <div style="background:#f1f5f9; padding:16px; flex:1; min-width:0; overflow:auto; display:flex; justify-content:center; align-items:flex-start;">
+            <iframe id="receiptFrame" style="width:100%; max-width:80mm; height:100%; min-height:500px; border:none; background:#fff; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08);"></iframe>
+        </div>
+
+        <!-- Right Side: Action Buttons Area (Fixed 280px Width) -->
+        <div style="width:280px; flex-shrink:0; padding:22px; display:flex; flex-direction:column; gap:12px; justify-content:flex-start; border-left:1px solid #eef1f5; background:#fff;">
+            
+            <!-- Main Print Button (Top) -->
+            <button id="smartPrintBtn" class="btn" style="background:var(--primary); margin:0; width:100%; padding:18px; font-size:17px; font-weight:700; border-radius:10px;" onclick="smartPrint()">🖨️ Print</button>
+            
+            <!-- PDF & Cancel Buttons (Bottom Row) -->
+            <div style="display:flex; gap:10px; width:100%;">
+                <button class="btn" style="background:#10b981; margin:0; flex:1; padding:14px; font-size:14px; font-weight:700; border-radius:10px;" onclick="downloadReceiptPDF()">⬇️ PDF</button>
+                <button class="btn" style="background:var(--slate); margin:0; flex:1; padding:14px; font-size:14px; font-weight:700; border-radius:10px;" onclick="closeM()">Cancel</button>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+      
   <div class="modal" id="delConfirmM"><h3>Delete?</h3><div class="flex-btn"><button class="btn" style="background:var(--d)" onclick="confirmDelete()">DELETE</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
     <div class="modal" id="dupM"><div style="text-align:center"><h3>⚠️ Duplicated</h3><p id="dupMsg"></p><button class="btn" style="background:var(--secondary); width:100%" onclick="closeDup()">OK</button></div></div>
 
