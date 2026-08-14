@@ -1401,10 +1401,55 @@ function printThermal(html, billNo, dateStr) {
 
 
 
-function browserPrintReceipt() {
+
+  function browserPrintReceipt() {
     const frame = document.getElementById('receiptFrame');
     frame.contentWindow.focus();
     frame.contentWindow.print();
+}
+
+// नया silentPrintReceipt फ़ंक्शन जो QZ Tray के जरिए सीधे प्रिंट कमांड भेजेगा
+async function silentPrintReceipt() {
+    // 1. QZ Tray से कनेक्ट करें
+    if (!qz.websocket.isActive()) {
+        await qz.websocket.connect();
+    }
+
+    // 2. सेव किया हुआ प्रिंटर नाम प्राप्त करें
+    const printerName = localStorage.getItem('asb_qz_printer');
+    if (!printerName) {
+        throw new Error("कोई QZ प्रिंटर सेट नहीं है");
+    }
+
+    // 3. iframe या current receipt से HTML डेटा प्राप्त करें
+    const frame = document.getElementById('receiptFrame');
+    let receiptHTML = '';
+    
+    if (frame && frame.contentWindow) {
+        receiptHTML = frame.contentWindow.document.documentElement.innerHTML;
+    } else if (window.currentReceiptHTML) {
+        receiptHTML = window.currentReceiptHTML;
+    }
+
+    if (!receiptHTML) {
+        throw new Error("रसीद का डेटा नहीं मिला!");
+    }
+
+    // 4. प्रिंट कॉन्फ़िगरेशन सेट करें (80mm थर्मल रोल के लिए)
+    const config = qz.configs.create(printerName, {
+        size: { width: 80, height: 297 },
+        units: 'mm',
+        encoding: 'UTF-8'
+    });
+
+    // 5. बिना डायलॉग बॉक्स खोले प्रिंट भेजें
+    const printData = [{
+        type: 'html',
+        format: 'plain',
+        data: receiptHTML
+    }];
+
+    await qz.print(config, printData);
 }
 
 async function smartPrint() {
@@ -1445,6 +1490,7 @@ function confirmReceiptPrint() {
         console.error('Print failed:', e);
     }
 }
+
 
 function downloadReceiptPDF() {
     const frame = document.getElementById('receiptFrame');
