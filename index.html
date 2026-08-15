@@ -1414,23 +1414,13 @@ ${dlvHtml}
     document.getElementById('ticketBadge').innerText = '🎫 --';
     showTicketPage();
     
-    // Receipt HTML frame mein load karna
+    // Receipt HTML frame mein load karna (sirf PREVIEW - koi auto print nahi)
     printThermal(html, billCount, dateStr);
 
-    // Yahan Electron IPC ya Smart Print trigger kiya gaya hai taaki bypass ho sake
-    try {
-        // Agar aap Electron environment mein hain toh seedha IPC bhej dein
-        if (typeof require !== 'undefined') {
-            const { ipcRenderer } = require('electron');
-            ipcRenderer.send('print-recipe');
-        } else {
-            // Web / QZ Tray fallback smartPrint execution
-            await smartPrint();
-        }
-    } catch (err) {
-        console.error('Auto silent print error, falling back to standard dialog:', err);
-        confirmReceiptPrint();
-    }
+    // NOTE: Pehle yahan auto-print (Electron IPC / smartPrint fallback) call hota tha,
+    // jiski wajah se ticket seedha BLUE ho jata tha bina user ke modal Print button dabaye.
+    // Ab executePrint() sirf preview dikhata hai aur ticket ko RED (pending) rakhta hai.
+    // Actual print sirf tab hoga jab user modal ke andar black "Print" button (smartPrint()) dabayega.
 }
 
 function printThermal(html, billNo, dateStr) {
