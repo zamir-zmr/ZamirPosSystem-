@@ -181,6 +181,7 @@
         }
         .ticket-cell:active { transform: scale(0.94); }
         .ticket-cell.used { background: linear-gradient(150deg, var(--secondary-light), var(--secondary)); box-shadow: 0 6px 14px rgba(79,70,229,.32); }
+        .ticket-cell.pending { background: linear-gradient(150deg, #f87171, #dc2626); box-shadow: 0 6px 14px rgba(220,38,38,.32); }
         .ticket-badge { display: flex; align-items: center; gap: 6px; background: #eef2ff; color: var(--secondary); border: 1.5px solid var(--secondary); padding: 7px 13px; border-radius: 20px; font-weight: 800; font-size: 13px; cursor: pointer; transition: .15s; }
         .ticket-badge:hover { box-shadow: 0 4px 10px rgba(79,70,229,.2); }
 
@@ -476,6 +477,7 @@
 
 
     <div class="modal" id="previewM"><h3>Receipt</h3><div id="preview-content"></div><div class="flex-btn"><button class="btn" style="background:var(--primary)" onclick="executePrint()">PRINT</button><button class="btn" style="background:var(--slate)" onclick="closeM()">CANCEL</button></div></div>
+  
     <div class="ov" id="receiptOv" style="z-index:9000;" onclick="closeReceiptModal()"></div>
 
   
@@ -1032,7 +1034,7 @@ function processPastedJson() {
         cats = JSON.parse(localStorage.getItem('asb_c')) || [{n:'Cakes', i:''}, {n:'Snacks', i:''}], 
         cart = [];
     let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '';
-    let currentTicket = null, ticketsUsed = [], activeTicketTab = 1;
+    let currentTicket = null, ticketsUsed = [], ticketsPending = [], activeTicketTab = 1;
     
     function initApp() { loadSavedLogo(); 
     location.hash = 'home'; render(); loadTicketState(); showTicketPage(); }
@@ -1044,10 +1046,13 @@ function processPastedJson() {
         const savedDate = localStorage.getItem('asb_ticket_date');
         if (savedDate !== today) {
             ticketsUsed = [];
+            ticketsPending = [];
             localStorage.setItem('asb_ticket_date', today);
             localStorage.setItem('asb_tickets_used', JSON.stringify([]));
+            localStorage.setItem('asb_tickets_pending', JSON.stringify([]));
         } else {
             ticketsUsed = JSON.parse(localStorage.getItem('asb_tickets_used')) || [];
+            ticketsPending = JSON.parse(localStorage.getItem('asb_tickets_pending')) || [];
         }
     }
 
@@ -1056,6 +1061,28 @@ function processPastedJson() {
         if (!ticketsUsed.includes(num)) ticketsUsed.push(num);
         localStorage.setItem('asb_ticket_date', todayLocalStr());
         localStorage.setItem('asb_tickets_used', JSON.stringify(ticketsUsed));
+    }
+
+    // RED state: item punched / receipt previewed via executePrint, not yet actually printed
+    function markTicketPending(num) {
+        if (num === null || num === undefined) return;
+        loadTicketState();
+        if (!ticketsPending.includes(num)) ticketsPending.push(num);
+        localStorage.setItem('asb_ticket_date', todayLocalStr());
+        localStorage.setItem('asb_tickets_pending', JSON.stringify(ticketsPending));
+        renderTicketGrid();
+    }
+
+    // BLUE state: bill actually printed via smartPrint -> move ticket from pending(red) to used(blue)
+    function markTicketPrinted(num) {
+        if (num === null || num === undefined) return;
+        loadTicketState();
+        ticketsPending = ticketsPending.filter(n => n !== num);
+        if (!ticketsUsed.includes(num)) ticketsUsed.push(num);
+        localStorage.setItem('asb_ticket_date', todayLocalStr());
+        localStorage.setItem('asb_tickets_pending', JSON.stringify(ticketsPending));
+        localStorage.setItem('asb_tickets_used', JSON.stringify(ticketsUsed));
+        renderTicketGrid();
     }
 
     function switchTicketTab(tab) {
@@ -1073,7 +1100,7 @@ function processPastedJson() {
         const end = activeTicketTab === 1 ? 50 : 100;
         for (let i = start; i <= end; i++) {
             const cell = document.createElement('div');
-            cell.className = 'ticket-cell' + (ticketsUsed.includes(i) ? ' used' : '');
+            cell.className = 'ticket-cell' + (ticketsUsed.includes(i) ? ' used' : (ticketsPending.includes(i) ? ' pending' : ''));
             cell.innerText = i;
             cell.onclick = () => selectTicket(i);
             grid.appendChild(cell);
@@ -1322,7 +1349,8 @@ ${dlvHtml}
 </body></html>`;
     }
 
-    async function executePrint() {
+   
+  async function executePrint() {
     const now = new Date(); 
     const dateStr = now.toLocaleDateString('en-GB'); 
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); 
@@ -1378,12 +1406,31 @@ ${dlvHtml}
     });
 
     logSale(g.toFixed(3), billCount); 
-    if (currentTicket) markTicketUsed(currentTicket);
+    // Ticket ko RED (pending) mark karein - items punched/previewed, abhi actual print (smartPrint) nahi hua
+    window.lastPrintTicket = currentTicket || null;
+    if (currentTicket) markTicketPending(currentTicket);
     currentTicket = null;
     clearCart(); closeM();
     document.getElementById('ticketBadge').innerText = '🎫 --';
     showTicketPage();
+    
+    // Receipt HTML frame mein load karna
     printThermal(html, billCount, dateStr);
+
+    // Yahan Electron IPC ya Smart Print trigger kiya gaya hai taaki bypass ho sake
+    try {
+        // Agar aap Electron environment mein hain toh seedha IPC bhej dein
+        if (typeof require !== 'undefined') {
+            const { ipcRenderer } = require('electron');
+            ipcRenderer.send('print-recipe');
+        } else {
+            // Web / QZ Tray fallback smartPrint execution
+            await smartPrint();
+        }
+    } catch (err) {
+        console.error('Auto silent print error, falling back to standard dialog:', err);
+        confirmReceiptPrint();
+    }
 }
 
 function printThermal(html, billNo, dateStr) {
@@ -1396,19 +1443,13 @@ function printThermal(html, billNo, dateStr) {
     window.currentReceiptHTML = html;
 }
 
-
-
-
-
-
-
-  function browserPrintReceipt() {
+function browserPrintReceipt() {
     const frame = document.getElementById('receiptFrame');
     frame.contentWindow.focus();
     frame.contentWindow.print();
 }
 
-// नया silentPrintReceipt फ़ंक्शन जो QZ Tray के जरिए सीधे प्रिंट कमांड भेजेगा
+// QZ Tray ke जरिए सीधे प्रिंट कमांड भेजने वाला फ़ंक्शन
 async function silentPrintReceipt() {
     // 1. QZ Tray से कनेक्ट करें
     if (!qz.websocket.isActive()) {
@@ -1454,13 +1495,12 @@ async function silentPrintReceipt() {
 
 async function smartPrint() {
     const btn = document.getElementById('smartPrintBtn');
+    if (!btn) return;
     const originalLabel = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '⏳ Printing...';
     try {
         const printerName = localStorage.getItem('asb_qz_printer');
-        // Only attempt silent printing if a printer has already been set up
-        // and QZ connects quickly — otherwise go straight to the normal dialog.
         if (printerName) {
             const available = await isQZAvailable(2000);
             if (available) {
@@ -1478,6 +1518,11 @@ async function smartPrint() {
     } finally {
         btn.innerHTML = originalLabel;
         btn.disabled = false;
+        // BLUE state: actual print (smartPrint) trigger ho chuka - RED se BLUE badal dein
+        if (window.lastPrintTicket) {
+            markTicketPrinted(window.lastPrintTicket);
+            window.lastPrintTicket = null;
+        }
     }
 }
 
@@ -1490,6 +1535,7 @@ function confirmReceiptPrint() {
         console.error('Print failed:', e);
     }
 }
+
 
 
 function downloadReceiptPDF() {
