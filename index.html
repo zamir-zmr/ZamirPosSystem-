@@ -1061,6 +1061,7 @@ function processPastedJson() {
         if (!ticketsUsed.includes(num)) ticketsUsed.push(num);
         localStorage.setItem('asb_ticket_date', todayLocalStr());
         localStorage.setItem('asb_tickets_used', JSON.stringify(ticketsUsed));
+        renderTicketGrid();
     }
 
     // RED state: item punched / receipt previewed via executePrint, not yet actually printed
@@ -1138,9 +1139,12 @@ function processPastedJson() {
         let num = parseInt(ticketNo);
         loadTicketState();
         ticketsUsed = ticketsUsed.filter(n => n !== num);
+        ticketsPending = ticketsPending.filter(n => n !== num);
         localStorage.setItem('asb_tickets_used', JSON.stringify(ticketsUsed));
+        localStorage.setItem('asb_tickets_pending', JSON.stringify(ticketsPending));
         clearTicketCart(num);
         if (currentTicket === num) currentTicket = null;
+        renderTicketGrid();
     }
     // method truthy (Transfer/ATM/Cash) => bill settled, ticket free ho jaega (brown)
     // method blank (Pending) => ticket phir se used maana jaega (blue)
