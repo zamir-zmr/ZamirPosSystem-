@@ -2578,12 +2578,98 @@ function showDetails(type) {
     }
 }
 
+function formatDateLabel(dateKey, opts) {
+    const parts = dateKey.split('-').map(Number);
+    const dt = new Date(parts[0], parts[1] - 1, parts[2]);
+    return dt.toLocaleString('default', opts || { month: 'short', day: 'numeric' });
+}
+
+let billFilterMode = 'today';
+
+// Bills Detail modal ke andar Today / Yesterday tabs ka logic
+function openBillsForFilter(mode) {
+    let dateKey, label, headerText;
+    if (mode === 'yesterday') {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        label = formatDateLabel(dateKey);
+        headerText = "YESTERDAY'S SALE";
+    } else {
+        mode = 'today';
+        dateKey = todayLocalStr();
+        label = formatDateLabel(dateKey);
+        headerText = 'TOTAL DAY SALE';
+    }
+    document.getElementById('manualDatePickerWrap').style.display = 'none';
+    showIndividualBills(dateKey, label, headerText, mode);
+}
+
+// Manually tab: date input + Apply dikhana/chhupana
+function toggleManualDatePicker() {
+    billFilterMode = 'manual';
+    updateBillFilterTabsUI();
+    const wrap = document.getElementById('manualDatePickerWrap');
+    wrap.style.display = 'flex';
+    const input = document.getElementById('manualBillDateInput');
+    if (!input.value) input.value = todayLocalStr();
+}
+
+// Manually tab: Apply button dabane par us specific date ke bills dikhana
+function applyManualBillsDate() {
+    const input = document.getElementById('manualBillDateInput');
+    if (!input.value) return;
+    const dateKey = input.value; // already YYYY-MM-DD
+    const label = formatDateLabel(dateKey, { month: 'short', day: 'numeric', year: 'numeric' });
+    const headerText = label + ' SALE';
+    showIndividualBills(dateKey, label, headerText, 'manual');
+}
+
+// Filter tab buttons ki active/inactive styling sync karna
+function updateBillFilterTabsUI() {
+    const active = { background: '#1e293b', color: '#fff' };
+    const inactive = { background: '#f1f5f9', color: '#475569' };
+    ['today', 'yesterday', 'manual'].forEach(m => {
+        const btn = document.getElementById('billFilterBtn-' + m);
+        if (!btn) return;
+        const s = (m === billFilterMode) ? active : inactive;
+        btn.style.background = s.background;
+        btn.style.color = s.color;
+    });
+    if (billFilterMode !== 'manual') {
+        const wrap = document.getElementById('manualDatePickerWrap');
+        if (wrap) wrap.style.display = 'none';
+    }
+}
+
 // 3. किसी खास तारीख के सभी बिलों की लिस्ट दिखाना (Payment Method के साथ)
 
-function showIndividualBills(dateKey, displayLabel) {
+function showIndividualBills(dateKey, displayLabel, saleHeaderText, filterMode) {
     let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
     let filteredBills = sales.filter(s => s.date === dateKey);
-    
+
+    // Agar filterMode explicitly nahi diya gaya (purane call sites se), toh dateKey ke hisaab se tab detect karein
+    if (!filterMode) {
+        if (dateKey === todayLocalStr()) {
+            filterMode = 'today';
+        } else {
+            const y = new Date(); y.setDate(y.getDate() - 1);
+            const yKey = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`;
+            filterMode = (dateKey === yKey) ? 'yesterday' : 'manual';
+        }
+    }
+    if (!saleHeaderText) {
+        if (filterMode === 'yesterday') saleHeaderText = "YESTERDAY'S SALE";
+        else if (filterMode === 'manual') saleHeaderText = formatDateLabel(dateKey, { month: 'short', day: 'numeric', year: 'numeric' }) + ' SALE';
+        else saleHeaderText = 'TOTAL DAY SALE';
+    }
+    billFilterMode = filterMode;
+    if (filterMode === 'manual') {
+        const input = document.getElementById('manualBillDateInput');
+        if (input) input.value = dateKey;
+    }
+    updateBillFilterTabsUI();
+
     document.getElementById('billModalTitle').innerText = "BILLS DETAIL";
     document.getElementById('billModalSubTitle').innerText = displayLabel;
     
@@ -2611,7 +2697,7 @@ function showIndividualBills(dateKey, displayLabel) {
     let summaryHtml = `
         <div style="margin-bottom: 20px;">
             <div style="background: linear-gradient(135deg, #1e293b, #334155); color: white; padding: 15px; border-radius: 14px; text-align: center; margin-bottom: 12px;">
-                <small style="opacity: 0.8; font-weight: bold; font-size: 10px; letter-spacing: 1px;">TOTAL DAY SALE</small>
+                <small style="opacity: 0.8; font-weight: bold; font-size: 10px; letter-spacing: 1px;">${saleHeaderText}</small>
                 <div style="font-size: 22px; font-weight: 900;">${grandTotal.toFixed(3)} <span style="font-size: 12px; opacity: 0.7;">OMR</span></div>
             </div>
             
@@ -3765,6 +3851,29 @@ function deleteBill(billNo, dateKey, displayLabel){
                 style="background: #ff4757; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(255,71,87,0.2); font-size: 14px;">
             CLOSE ✕
         </button>
+    </div>
+
+    <div style="position: sticky; top: 0; background: #fff; padding: 10px 15px 12px 15px; border-bottom: 1px solid #f1f5f9; z-index: 99;">
+        <div style="display:flex; gap:8px;">
+            <button id="billFilterBtn-today" onclick="openBillsForFilter('today')"
+                    style="flex:1; padding:9px 4px; border-radius:10px; border:none; font-size:12px; font-weight:800; cursor:pointer; background:#1e293b; color:#fff;">
+                Today
+            </button>
+            <button id="billFilterBtn-yesterday" onclick="openBillsForFilter('yesterday')"
+                    style="flex:1; padding:9px 4px; border-radius:10px; border:none; font-size:12px; font-weight:800; cursor:pointer; background:#f1f5f9; color:#475569;">
+                Yesterday
+            </button>
+            <button id="billFilterBtn-manual" onclick="toggleManualDatePicker()"
+                    style="flex:1; padding:9px 4px; border-radius:10px; border:none; font-size:12px; font-weight:800; cursor:pointer; background:#f1f5f9; color:#475569;">
+                Manually
+            </button>
+        </div>
+        <div id="manualDatePickerWrap" style="display:none; margin-top:10px; gap:8px; align-items:center;">
+            <input type="date" id="manualBillDateInput" style="flex:1; padding:9px 8px; border-radius:10px; border:1px solid #e2e8f0; font-size:12px; font-weight:600; color:#1e293b; outline:none;">
+            <button onclick="applyManualBillsDate()" style="padding:9px 16px; border-radius:10px; border:none; background:#0f766e; color:#fff; font-size:12px; font-weight:800; cursor:pointer;">
+                Apply
+            </button>
+        </div>
     </div>
 
     <div id="billListContent" style="flex: 1; overflow-y: auto; padding: 10px 15px 40px 15px; -webkit-overflow-scrolling: touch; background: #fff;">
