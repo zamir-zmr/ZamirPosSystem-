@@ -182,7 +182,7 @@
         .ticket-cell:active { transform: scale(0.94); }
         .ticket-cell.used { background: linear-gradient(150deg, var(--secondary-light), var(--secondary)); box-shadow: 0 6px 14px rgba(79,70,229,.32); }
         .ticket-cell.pending { background: linear-gradient(150deg, #f87171, #dc2626); box-shadow: 0 6px 14px rgba(220,38,38,.32); }
-        .ticket-cell.settled { background: linear-gradient(150deg, #334155, #0f172a); box-shadow: 0 6px 14px rgba(15,23,42,.4); }
+        .ticket-cell.settled { background: linear-gradient(150deg, #334155, #0f172a); box-shadow: 0 6px 14px rgba(15,23,42,.4); cursor: not-allowed; opacity: 0.85; pointer-events: none; }
         .ticket-badge { display: flex; align-items: center; gap: 6px; background: #eef2ff; color: var(--secondary); border: 1.5px solid var(--secondary); padding: 7px 13px; border-radius: 20px; font-weight: 800; font-size: 13px; cursor: pointer; transition: .15s; }
         .ticket-badge:hover { box-shadow: 0 4px 10px rgba(79,70,229,.2); }
 
@@ -1124,9 +1124,16 @@ function processPastedJson() {
         const end = activeTicketTab === 1 ? 50 : 100;
         for (let i = start; i <= end; i++) {
             const cell = document.createElement('div');
-            cell.className = 'ticket-cell' + (ticketsUsed.includes(i) ? ' used' : (ticketsPending.includes(i) ? ' pending' : (ticketsSettled.includes(i) ? ' settled' : '')));
+            const isSettled = ticketsSettled.includes(i);
+            cell.className = 'ticket-cell' + (ticketsUsed.includes(i) ? ' used' : (ticketsPending.includes(i) ? ' pending' : (isSettled ? ' settled' : '')));
             cell.innerText = i;
-            cell.onclick = () => selectTicket(i);
+            if (isSettled) {
+                // Settled (Black) ticket - bill fully settled, dobara select/click nahi hone dena
+                cell.setAttribute('aria-disabled', 'true');
+                cell.title = 'Ticket #' + i + ' already settled';
+            } else {
+                cell.onclick = () => selectTicket(i);
+            }
             grid.appendChild(cell);
         }
     }
@@ -1191,6 +1198,9 @@ function processPastedJson() {
     }
 
     function selectTicket(num) {
+        // Extra safety: settled (black) ticket ko kabhi bhi select na hone dein, chahe onclick bypass ho
+        loadTicketState();
+        if (ticketsSettled.includes(num)) return;
         currentTicket = num;
         // Agar is ticket ka aaj ka pending bill (save/print ho chuka, settle nahi hua) sales log mein maujood hai,
         // to wahi asli/final data dikhayein (order items + phone). Warna ticket cart (draft) use karein.
