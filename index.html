@@ -182,6 +182,7 @@
         .ticket-cell:active { transform: scale(0.94); }
         .ticket-cell.used { background: linear-gradient(150deg, var(--secondary-light), var(--secondary)); box-shadow: 0 6px 14px rgba(79,70,229,.32); }
         .ticket-cell.pending { background: linear-gradient(150deg, #f87171, #dc2626); box-shadow: 0 6px 14px rgba(220,38,38,.32); }
+        .ticket-cell.settled { background: linear-gradient(150deg, #334155, #0f172a); box-shadow: 0 6px 14px rgba(15,23,42,.4); }
         .ticket-badge { display: flex; align-items: center; gap: 6px; background: #eef2ff; color: var(--secondary); border: 1.5px solid var(--secondary); padding: 7px 13px; border-radius: 20px; font-weight: 800; font-size: 13px; cursor: pointer; transition: .15s; }
         .ticket-badge:hover { box-shadow: 0 4px 10px rgba(79,70,229,.2); }
 
@@ -1034,7 +1035,7 @@ function processPastedJson() {
         cats = JSON.parse(localStorage.getItem('asb_c')) || [{n:'Cakes', i:''}, {n:'Snacks', i:''}], 
         cart = [];
     let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '';
-    let currentTicket = null, ticketsUsed = [], ticketsPending = [], activeTicketTab = 1;
+    let currentTicket = null, ticketsUsed = [], ticketsPending = [], ticketsSettled = [], activeTicketTab = 1;
     
     function initApp() { loadSavedLogo(); 
     location.hash = 'home'; render(); loadTicketState(); showTicketPage(); }
@@ -1045,22 +1046,30 @@ function processPastedJson() {
         const today = todayLocalStr();
         const savedDate = localStorage.getItem('asb_ticket_date');
         if (savedDate !== today) {
+            // Naya din - sab ticket numbers (1-100) completely reset: 0 items, zero status
             ticketsUsed = [];
             ticketsPending = [];
+            ticketsSettled = [];
             localStorage.setItem('asb_ticket_date', today);
             localStorage.setItem('asb_tickets_used', JSON.stringify([]));
             localStorage.setItem('asb_tickets_pending', JSON.stringify([]));
+            localStorage.setItem('asb_tickets_settled', JSON.stringify([]));
+            // Purane din ke draft ticket carts (unselected items) bhi clear kar dein
+            localStorage.setItem('asb_ticket_carts', JSON.stringify({}));
         } else {
             ticketsUsed = JSON.parse(localStorage.getItem('asb_tickets_used')) || [];
             ticketsPending = JSON.parse(localStorage.getItem('asb_tickets_pending')) || [];
+            ticketsSettled = JSON.parse(localStorage.getItem('asb_tickets_settled')) || [];
         }
     }
 
     function markTicketUsed(num) {
         loadTicketState();
+        ticketsSettled = ticketsSettled.filter(n => n !== num);
         if (!ticketsUsed.includes(num)) ticketsUsed.push(num);
         localStorage.setItem('asb_ticket_date', todayLocalStr());
         localStorage.setItem('asb_tickets_used', JSON.stringify(ticketsUsed));
+        localStorage.setItem('asb_tickets_settled', JSON.stringify(ticketsSettled));
         renderTicketGrid();
     }
 
@@ -1086,6 +1095,20 @@ function processPastedJson() {
         renderTicketGrid();
     }
 
+    // BLACK state: bill settled via payment dropdown (Transfer/ATM/Cash)
+    function settleTicket(num) {
+        if (num === null || num === undefined) return;
+        loadTicketState();
+        ticketsUsed = ticketsUsed.filter(n => n !== num);
+        ticketsPending = ticketsPending.filter(n => n !== num);
+        if (!ticketsSettled.includes(num)) ticketsSettled.push(num);
+        localStorage.setItem('asb_ticket_date', todayLocalStr());
+        localStorage.setItem('asb_tickets_used', JSON.stringify(ticketsUsed));
+        localStorage.setItem('asb_tickets_pending', JSON.stringify(ticketsPending));
+        localStorage.setItem('asb_tickets_settled', JSON.stringify(ticketsSettled));
+        renderTicketGrid();
+    }
+
     function switchTicketTab(tab) {
         activeTicketTab = tab;
         document.getElementById('tTab1').classList.toggle('active', tab === 1);
@@ -1101,7 +1124,7 @@ function processPastedJson() {
         const end = activeTicketTab === 1 ? 50 : 100;
         for (let i = start; i <= end; i++) {
             const cell = document.createElement('div');
-            cell.className = 'ticket-cell' + (ticketsUsed.includes(i) ? ' used' : (ticketsPending.includes(i) ? ' pending' : ''));
+            cell.className = 'ticket-cell' + (ticketsUsed.includes(i) ? ' used' : (ticketsPending.includes(i) ? ' pending' : (ticketsSettled.includes(i) ? ' settled' : '')));
             cell.innerText = i;
             cell.onclick = () => selectTicket(i);
             grid.appendChild(cell);
@@ -1140,20 +1163,22 @@ function processPastedJson() {
         loadTicketState();
         ticketsUsed = ticketsUsed.filter(n => n !== num);
         ticketsPending = ticketsPending.filter(n => n !== num);
+        ticketsSettled = ticketsSettled.filter(n => n !== num);
         localStorage.setItem('asb_tickets_used', JSON.stringify(ticketsUsed));
         localStorage.setItem('asb_tickets_pending', JSON.stringify(ticketsPending));
+        localStorage.setItem('asb_tickets_settled', JSON.stringify(ticketsSettled));
         clearTicketCart(num);
         if (currentTicket === num) currentTicket = null;
         renderTicketGrid();
     }
-    // method truthy (Transfer/ATM/Cash) => bill settled, ticket free ho jaega (brown)
+    // method truthy (Transfer/ATM/Cash) => bill settled, ticket status Black ho jayega
     // method blank (Pending) => ticket phir se used maana jaega (blue)
     function setTicketMethodState(ticketNo, dateKey, method) {
         if (!ticketNo) return;
         if (dateKey !== todayLocalStr()) return;
         let num = parseInt(ticketNo);
         if (method) {
-            releaseTicketIfSameDay(ticketNo, dateKey);
+            settleTicket(num);
         } else {
             markTicketUsed(num);
         }
@@ -1192,7 +1217,7 @@ function processPastedJson() {
         updateCartUI();
     }
     function showDashboard() { document.getElementById('dashPage').style.display = 'flex'; }
-    function closeDash() { document.getElementById('dashPage').style.display = 'none'; }
+    function closeDash() { document.getElementById('dashPage').style.display = 'none'; renderTicketGrid(); }
 
     // ============ BACK-BUTTON NAVIGATION (Dashboard sub-pages -> Dashboard) ============
     // Har sub-page (Reports, Top Selling, Manage Items, Inventory) jab khulta hai to
@@ -3726,7 +3751,7 @@ function deleteBill(billNo, dateKey, displayLabel){
             <small id="billModalSubTitle" style="color: #64748b; font-size: 13px; font-weight: 600;"></small>
         </div>
         
-        <button onclick="document.getElementById('billDetailsM').style.display='none'; document.getElementById('ov').style.display='none'" 
+        <button onclick="document.getElementById('billDetailsM').style.display='none'; document.getElementById('ov').style.display='none'; renderTicketGrid();" 
                 style="background: #ff4757; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(255,71,87,0.2); font-size: 14px;">
             CLOSE ✕
         </button>
