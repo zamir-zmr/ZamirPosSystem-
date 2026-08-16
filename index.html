@@ -2539,6 +2539,8 @@ function renderTopSellingRange(start, end){
 }
 
 // 2. रिपोर्ट्स के अंदर Daily/Monthly की लिस्ट दिखाना
+let dailyReportMonth = null, dailyReportYear = null; // null = current month/year (default)
+
 function showDetails(type) {
     
   document.getElementById('dateDetailsPage').style.display = 'flex';
@@ -2548,16 +2550,20 @@ function showDetails(type) {
     const now = new Date();
     list.innerHTML = '';
 
+    const filterBar = document.getElementById('dailyReportFilterBar');
+
     if (type === 'day') {
-        title.innerText = "DAILY REPORTS";
-        let daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        for (let i = 1; i <= daysInMonth; i++) {
-            let dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-            let dayTotal = sales.filter(s => s.date === dateKey).reduce((a, b) => a + b.amount, 0);
-            addReportRow(list, `${now.toLocaleString('default',{month:'short'})} ${i}`, dayTotal.toFixed(3), i === now.getDate(), dateKey);
-        }
-    } 
-    else if (type === 'month') {
+        filterBar.style.display = 'block';
+        dailyReportMonth = now.getMonth();
+        dailyReportYear = now.getFullYear();
+        dailyFilterMode = 'month';
+        updateDailyFilterTabsUI();
+        renderDailyReportsFor(dailyReportYear, dailyReportMonth);
+        return;
+    } else {
+        filterBar.style.display = 'none';
+    }
+    if (type === 'month') {
         title.innerText = "MONTHLY REPORTS";
         const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
         months.forEach((m, i) => {
@@ -2575,6 +2581,99 @@ function showDetails(type) {
             let yTotal = sales.filter(s => new Date(s.date).getFullYear() === y).reduce((a, b) => a + b.amount, 0);
             addReportRow(list, `Year ${y}`, yTotal.toFixed(3), y === currentYear, null);
         }
+    }
+}
+
+// Daily Reports ko kisi bhi chune hue month/year ke liye render karna
+function renderDailyReportsFor(year, month) {
+    const list = document.getElementById('dateList');
+    const title = document.getElementById('detailTitle');
+    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    const now = new Date();
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    list.innerHTML = '';
+    title.innerText = "DAILY REPORTS";
+    let daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let i = 1; i <= daysInMonth; i++) {
+        let dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        let dayTotal = sales.filter(s => s.date === dateKey).reduce((a, b) => a + b.amount, 0);
+        let isToday = (i === now.getDate() && month === now.getMonth() && year === now.getFullYear());
+        addReportRow(list, `${months[month]} ${i}`, dayTotal.toFixed(3), isToday, dateKey);
+    }
+}
+
+let dailyFilterMode = 'month'; // 'month' | 'manual'
+
+function showDailyReportsForFilter(mode) {
+    const now = new Date();
+    dailyFilterMode = mode;
+    dailyReportMonth = now.getMonth();
+    dailyReportYear = now.getFullYear();
+    document.getElementById('dailyManualPickerWrap').style.display = 'none';
+    updateDailyFilterTabsUI();
+    renderDailyReportsFor(dailyReportYear, dailyReportMonth);
+}
+
+// Manually tab: sirf current + past months/years dikhayein, future nahi
+function toggleDailyManualPicker() {
+    dailyFilterMode = 'manual';
+    updateDailyFilterTabsUI();
+    const wrap = document.getElementById('dailyManualPickerWrap');
+    wrap.style.display = 'flex';
+
+    const now = new Date();
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const monthSel = document.getElementById('dailyManualMonthSelect');
+    const yearSel = document.getElementById('dailyManualYearSelect');
+
+    // Year dropdown: 2024 se current year tak (future years exclude)
+    yearSel.innerHTML = '';
+    const currentYear = now.getFullYear();
+    for (let y = currentYear; y >= 2024; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.innerText = y;
+        if (y === currentYear) opt.selected = true;
+        yearSel.appendChild(opt);
+    }
+
+    function populateMonths() {
+        const selYear = parseInt(yearSel.value);
+        const maxMonth = (selYear === currentYear) ? now.getMonth() : 11; // future months exclude
+        monthSel.innerHTML = '';
+        for (let m = 0; m <= maxMonth; m++) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.innerText = months[m];
+            monthSel.appendChild(opt);
+        }
+        monthSel.value = maxMonth; // default current month (auto-fill)
+    }
+    populateMonths();
+    yearSel.onchange = populateMonths;
+}
+
+function applyDailyManualDate() {
+    const month = parseInt(document.getElementById('dailyManualMonthSelect').value);
+    const year = parseInt(document.getElementById('dailyManualYearSelect').value);
+    dailyReportMonth = month;
+    dailyReportYear = year;
+    renderDailyReportsFor(year, month);
+}
+
+function updateDailyFilterTabsUI() {
+    const active = { background: '#1e293b', color: '#fff' };
+    const inactive = { background: '#f1f5f9', color: '#475569' };
+    ['month', 'manual'].forEach(m => {
+        const btn = document.getElementById('dailyFilterBtn-' + (m === 'month' ? 'month' : 'manual'));
+        if (!btn) return;
+        const s = (m === dailyFilterMode) ? active : inactive;
+        btn.style.background = s.background;
+        btn.style.color = s.color;
+    });
+    if (dailyFilterMode !== 'manual') {
+        const wrap = document.getElementById('dailyManualPickerWrap');
+        if (wrap) wrap.style.display = 'none';
     }
 }
 
@@ -3704,6 +3803,25 @@ function deleteBill(billNo, dateKey, displayLabel){
 
       
     </div>
+<div id="dailyReportFilterBar" style="display:none; background:#fff; padding:10px 15px 12px 15px; border-bottom:1px solid #e2e8f0; flex-shrink:0;">
+    <div style="display:flex; gap:8px;">
+        <button id="dailyFilterBtn-month" onclick="showDailyReportsForFilter('month')"
+                style="flex:1; padding:9px 4px; border-radius:10px; border:none; font-size:12px; font-weight:800; cursor:pointer; background:#1e293b; color:#fff;">
+            This Month
+        </button>
+        <button id="dailyFilterBtn-manual" onclick="toggleDailyManualPicker()"
+                style="flex:1; padding:9px 4px; border-radius:10px; border:none; font-size:12px; font-weight:800; cursor:pointer; background:#f1f5f9; color:#475569;">
+            Manually
+        </button>
+    </div>
+    <div id="dailyManualPickerWrap" style="display:none; margin-top:10px; gap:8px; align-items:center;">
+        <select id="dailyManualMonthSelect" style="flex:1; padding:9px 8px; border-radius:10px; border:1px solid #e2e8f0; font-size:12px; font-weight:600; color:#1e293b; outline:none;"></select>
+        <select id="dailyManualYearSelect" style="flex:1; padding:9px 8px; border-radius:10px; border:1px solid #e2e8f0; font-size:12px; font-weight:600; color:#1e293b; outline:none;"></select>
+        <button onclick="applyDailyManualDate()" style="padding:9px 16px; border-radius:10px; border:none; background:#0f766e; color:#fff; font-size:12px; font-weight:800; cursor:pointer;">
+            Apply
+        </button>
+    </div>
+</div>
 <div id="dateList" style="flex: 1; overflow-y: auto; padding: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; align-content: start;">
     </div>
 
