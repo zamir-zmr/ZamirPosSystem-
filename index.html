@@ -718,15 +718,17 @@ function saveAll() {
 
 // App launch par Lifetime Saved Data Load karega
 window.addEventListener('DOMContentLoaded', () => {
-    let savedCats = localStorage.getItem('ASH_BAKES_CATS');
-    let savedMenu = localStorage.getItem('ASH_BAKES_MENU');
+    try {
+        let savedCats = localStorage.getItem('ASH_BAKES_CATS');
+        let savedMenu = localStorage.getItem('ASH_BAKES_MENU');
 
-    if (savedCats) {
-        try { cats = JSON.parse(savedCats); } catch(e){}
-    }
-    if (savedMenu) {
-        try { menu = JSON.parse(savedMenu); } catch(e){}
-    }
+        if (savedCats) {
+            try { cats = JSON.parse(savedCats); } catch(e){}
+        }
+        if (savedMenu) {
+            try { menu = JSON.parse(savedMenu); } catch(e){}
+        }
+    } catch(e) {}
 
     if (typeof renderMenu === 'function') renderMenu();
     if (typeof renderCategories === 'function') renderCategories();
@@ -1031,8 +1033,25 @@ function processPastedJson() {
 
 
 <script>
-    let menu = JSON.parse(localStorage.getItem('asb_m')) || [], 
-        cats = JSON.parse(localStorage.getItem('asb_c')) || [{n:'Cakes', i:''}, {n:'Snacks', i:''}], 
+    // Safe localStorage polyfill — Acode/file:// me crash nahi karega
+    (function() {
+        try { localStorage.getItem('__test__'); } catch(e) {
+            const _mem = {};
+            const _safe = {
+                getItem: k => _mem.hasOwnProperty(k) ? _mem[k] : null,
+                setItem: (k, v) => { _mem[k] = String(v); },
+                removeItem: k => { delete _mem[k]; },
+                clear: () => { Object.keys(_mem).forEach(k => delete _mem[k]); },
+                key: i => Object.keys(_mem)[i] || null,
+                get length() { return Object.keys(_mem).length; }
+            };
+            Object.defineProperty(window, 'localStorage', { value: _safe, writable: false });
+        }
+    })();
+    let _ls = (k, d) => { try { let v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e) { return d; } };
+    let _lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
+    let menu = _ls('asb_m', []), 
+        cats = _ls('asb_c', [{n:'Cakes', i:''}, {n:'Snacks', i:''}]), 
         cart = [];
     let curCat = null, isMulti = false, isCatMulti = false, selSet = new Set(), editId = null, editCatName = null, selectedIcon = '';
     let currentTicket = null, ticketsUsed = [], ticketsPending = [], ticketsSettled = [], activeTicketTab = 1;
@@ -1043,23 +1062,32 @@ function processPastedJson() {
     function todayLocalStr() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`; }
 
     function loadTicketState() {
-        const today = todayLocalStr();
-        const savedDate = localStorage.getItem('asb_ticket_date');
-        if (savedDate !== today) {
-            // Naya din - sab ticket numbers (1-100) completely reset: 0 items, zero status
-            ticketsUsed = [];
-            ticketsPending = [];
-            ticketsSettled = [];
-            localStorage.setItem('asb_ticket_date', today);
-            localStorage.setItem('asb_tickets_used', JSON.stringify([]));
-            localStorage.setItem('asb_tickets_pending', JSON.stringify([]));
-            localStorage.setItem('asb_tickets_settled', JSON.stringify([]));
-            // Purane din ke draft ticket carts (unselected items) bhi clear kar dein
-            localStorage.setItem('asb_ticket_carts', JSON.stringify({}));
-        } else {
-            ticketsUsed = JSON.parse(localStorage.getItem('asb_tickets_used')) || [];
-            ticketsPending = JSON.parse(localStorage.getItem('asb_tickets_pending')) || [];
-            ticketsSettled = JSON.parse(localStorage.getItem('asb_tickets_settled')) || [];
+        try {
+            const today = todayLocalStr();
+            const savedDate = localStorage.getItem('asb_ticket_date');
+            if (savedDate !== today) {
+                // Naya din - sab ticket numbers (1-100) completely reset: 0 items, zero status
+                ticketsUsed = [];
+                ticketsPending = [];
+                ticketsSettled = [];
+                try {
+                    localStorage.setItem('asb_ticket_date', today);
+                    localStorage.setItem('asb_tickets_used', JSON.stringify([]));
+                    localStorage.setItem('asb_tickets_pending', JSON.stringify([]));
+                    localStorage.setItem('asb_tickets_settled', JSON.stringify([]));
+                    // Purane din ke draft ticket carts (unselected items) bhi clear kar dein
+                    localStorage.setItem('asb_ticket_carts', JSON.stringify({}));
+                } catch(e) {}
+            } else {
+                ticketsUsed = JSON.parse(localStorage.getItem('asb_tickets_used')) || [];
+                ticketsPending = JSON.parse(localStorage.getItem('asb_tickets_pending')) || [];
+                ticketsSettled = JSON.parse(localStorage.getItem('asb_tickets_settled')) || [];
+            }
+        } catch(e) {
+            // localStorage unavailable (Acode/file:// protocol) - fresh state use karo
+            ticketsUsed = ticketsUsed || [];
+            ticketsPending = ticketsPending || [];
+            ticketsSettled = ticketsSettled || [];
         }
     }
 
@@ -1192,7 +1220,7 @@ function processPastedJson() {
     }
     function getPendingBillForTicket(ticketNo) {
         if (!ticketNo) return null;
-        let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+        let sales = _ls('asb_sales_logs', []);
         const today = todayLocalStr();
         return sales.find(s => s.date === today && String(s.ticketNo) === String(ticketNo) && !s.method) || null;
     }
@@ -1304,7 +1332,7 @@ function processPastedJson() {
         document.getElementById('logo-preview-box').innerHTML = content;
         document.getElementById('main-logo-container').innerHTML = content;
     }
-    function loadSavedLogo() { let savedPhoto = localStorage.getItem('savedPhotoUrl'); if (savedPhoto) displayLogo(savedPhoto); }
+    function loadSavedLogo() { try { let savedPhoto = localStorage.getItem('savedPhotoUrl'); if (savedPhoto) displayLogo(savedPhoto); } catch(e) {} }
 
     function escReceiptHtml(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -1396,7 +1424,7 @@ ${dlvHtml}
     const shift = getShift(now.getHours());
     
     const todayLocal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-    const lastSavedDate = localStorage.getItem('asb_last_date') || '';
+    const lastSavedDate = _ls('asb_last_date', '') || '';
     let pendingBill = getPendingBillForTicket(currentTicket);
     let billCount;
     if (pendingBill) {
@@ -1404,15 +1432,15 @@ ${dlvHtml}
     } else if (lastSavedDate !== todayLocal) {
         billCount = 1;
     } else {
-        billCount = (parseInt(localStorage.getItem('asb_bill_count')) || 0) + 1;
+        billCount = (parseInt(_ls('asb_bill_count', 0)) || 0) + 1;
     }
     if (!pendingBill) {
-        localStorage.setItem('asb_last_date', todayLocal);
-        localStorage.setItem('asb_bill_count', billCount);
+        _lsSet('asb_last_date', todayLocal);
+        _lsSet('asb_bill_count', billCount);
     }
 
     // Logo
-    let savedPhoto = localStorage.getItem('savedPhotoUrl');
+    let savedPhoto = _ls('savedPhotoUrl', null);
 
     const custPhoneVal = (document.getElementById('cust-phone') && document.getElementById('cust-phone').value.trim()) || '';
 
@@ -3281,7 +3309,7 @@ function adjustStockForItems(items, sign) {
 }
 
 function logSale(total, bNo) {
-    let sales = JSON.parse(localStorage.getItem('asb_sales_logs')) || [];
+    let sales = _ls('asb_sales_logs', []);
     const now = new Date();
 
     // Input boxes se discount aur delivery ki value uthayein
@@ -3313,7 +3341,7 @@ function logSale(total, bNo) {
     } else {
         sales.push(newSale);
     }
-    localStorage.setItem('asb_sales_logs', JSON.stringify(sales));
+    _lsSet('asb_sales_logs', sales);
     adjustStockForItems(newSale.items, -1);
 }
 
