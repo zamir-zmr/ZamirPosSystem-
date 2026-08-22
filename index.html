@@ -1322,7 +1322,7 @@ function processPastedJson() {
     function saveLogo() {
         const previewImg = document.querySelector('#logo-preview-box img');
         if (previewImg && previewImg.src) {
-            localStorage.setItem('savedPhotoUrl', previewImg.src);
+            try { localStorage.setItem('savedPhotoUrl', previewImg.src); } catch(e) {}
             displayLogo(previewImg.src);
             closeM();
         } else alert("Choose photo!");
@@ -1440,7 +1440,7 @@ ${dlvHtml}
     }
 
     // Logo
-    let savedPhoto = _ls('savedPhotoUrl', null);
+    let savedPhoto = (function(){ try { return localStorage.getItem('savedPhotoUrl'); } catch(e){ return null; } })();
 
     const custPhoneVal = (document.getElementById('cust-phone') && document.getElementById('cust-phone').value.trim()) || '';
 
@@ -3121,7 +3121,7 @@ function reprintBill(billNo, dateKey) {
 
     if (!b) return alert("Error: Bill data not found!");
 
-    let savedPhoto = localStorage.getItem('savedPhotoUrl');
+    let savedPhoto = (function(){ try { return localStorage.getItem('savedPhotoUrl'); } catch(e){ return null; } })();
 
     // --- SHIFT DETECTION FIX (AM/PM LOGIC) ---
     let timeParts = b.time.split(' '); 
@@ -3352,9 +3352,9 @@ function exportFullBackup() {
         cats: JSON.parse(localStorage.getItem('asb_c')) || [],
         sales: JSON.parse(localStorage.getItem('asb_sales_logs')) || [],
         // Yeh line bill number ko save karegi
-        billCount: parseInt(localStorage.getItem('asb_bill_count')) || 0,
-        lastDate: localStorage.getItem('asb_last_date') || "",
-        logo: localStorage.getItem('savedPhotoUrl') || ""
+        billCount: parseInt(_ls('asb_bill_count', 0)) || 0,
+        lastDate: (function(){ try { return localStorage.getItem('asb_last_date') || ""; } catch(e){ return ""; } })(),
+        logo: (function(){ try { return localStorage.getItem('savedPhotoUrl') || ""; } catch(e){ return ""; } })()
     };
 
     const blob = new Blob([JSON.stringify(backupData)], { type: 'application/json' });
@@ -3373,15 +3373,15 @@ function importFullBackup(event) {
         try {
             const data = JSON.parse(e.target.result);
             if (confirm("Restore backup? Current data will be replaced.")) {
-                localStorage.setItem('asb_m', JSON.stringify(data.menu));
-                localStorage.setItem('asb_c', JSON.stringify(data.cats));
-                localStorage.setItem('asb_sales_logs', JSON.stringify(data.sales));
+                _lsSet('asb_m', data.menu);
+                _lsSet('asb_c', data.cats);
+                _lsSet('asb_sales_logs', data.sales);
                 
                 // Bill number ko wapas restore kiya
-                localStorage.setItem('asb_bill_count', data.billCount || 0); 
-                localStorage.setItem('asb_last_date', data.lastDate || "");
+                try { localStorage.setItem('asb_bill_count', data.billCount || 0); } catch(e) {}
+                try { localStorage.setItem('asb_last_date', data.lastDate || ""); } catch(e) {}
                 
-                if(data.logo) localStorage.setItem('savedPhotoUrl', data.logo);
+                if(data.logo) { try { localStorage.setItem('savedPhotoUrl', data.logo); } catch(e) {} }
                 
                 alert("Restored! Next bill number: " + ((data.billCount || 0) + 1));
                 location.reload();
