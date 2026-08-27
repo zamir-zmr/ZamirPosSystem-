@@ -1349,8 +1349,11 @@ function processPastedJson() {
 
         let discHtml = discAmt > 0 ? `<div class="discount-row"><span>Discount (${discPerc}%)</span><span>-${discAmt.toFixed(3)}</span></div>` : '';
         let dlvHtml = delivery > 0 ? `<div class="delivery-row"><span>Delivery Charges</span><span>${delivery.toFixed(3)}</span></div>` : '';
-        let custHtml = custPhone ? `<div class="row"><span>Customer : ${escReceiptHtml(custPhone)}</span></div>` : '';
-        let logoHtml = logo ? `<img class="logo" src="${logo}" onerror="this.style.display='none'">` : '';
+
+      let custHtml = custPhone ? `<div class="row"><span style="font-size: 15px;">📞 ${escReceiptHtml(custPhone)}</span></div>` : '';
+
+      
+  let logoHtml = logo ? `<img class="logo" src="${logo}" onerror="this.style.display='none'">` : '';
 
         return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
