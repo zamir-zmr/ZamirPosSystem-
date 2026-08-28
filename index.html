@@ -4093,10 +4093,23 @@ button, .btn, .pos-btn { border-radius: 14px !important; }
 input[type="checkbox"] { accent-color: #0d9488; }
 ::selection { background: rgba(13,148,136,.22); }
 #billListPanel, #billListContent { scrollbar-width: thin; }
+
+/* ===== Mobile Receipt Preview (Screen < 900px) ===== */
+
+  
+@media (max-width: 899px) {
+    #receiptPrintM {
+        top: 0 !important;
+        bottom: 0 !important;
+        height: 105dvh !important;
+        max-height: 105dvh !important;
+    }
+    #receiptFrameWrap { min-height: 0 !important; }
+}
+
 @media (min-width: 900px) {
   body { overflow: auto; }
   .full-page .report-content, .full-page > div[style*="overflow-y:auto"] { scrollbar-width: thin; }
-  
 
   /* PC / Desktop (Screen >= 768px): Top-Right me fixed rahega */
 
