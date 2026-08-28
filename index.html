@@ -4095,17 +4095,18 @@ input[type="checkbox"] { accent-color: #0d9488; }
 
   /* PC / Desktop (Screen >= 768px): Top-Right me fixed rahega */
 
-  #receiptPrintM {
+ #receiptPrintM {
     position: fixed !important;
-    top: 4vh !important;
-    bottom: 4vh !important; /* Yeh add kar dein taaki bottom ko bhi 4vh ka gap milkar stretch ho jaye */
+    top: 0 !important;
+    bottom: 0 !important;
     left: auto !important;
     right: 28px !important;
     width: 360px !important;
     max-width: 360px !important;
-    height: auto !important; /* height ko auto kar dein kyunki top aur bottom dono fix ho chuke hain */
+    height: 100vh !important; /* Pura 100% viewport height taaki top se bottom tak stretch ho */
     max-height: none !important;
     transform: none !important;
+    border-radius: 0 !important; /* Agar bilkul edge-to-edge chahiye toh corners ke radius ko bhi hata sakte hain */
 
     /* Horizontal scroll completely block karne ke liye */
     overflow-x: hidden !important;
@@ -4124,6 +4125,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     border: none !important;
     display: block !important;
 }
+
 
 
 /* Mobile Screens (Screen < 768px) */
