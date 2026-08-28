@@ -80,7 +80,12 @@
         /* ===== Product grid ===== */
         .mw { flex: 1; overflow-y: auto; padding: 16px; margin-bottom: 76px; max-width: 1400px; width: 100%; margin-left: auto; margin-right: auto; }
 
-      .pg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-right 460px }
+/* Base Product Grid (Mobile & Default) - Full Height & Width */
+.pg { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 12px; 
+}
 
       
       .pc {
@@ -4130,20 +4135,15 @@ input[type="checkbox"] { accent-color: #0d9488; }
 
 /* Mobile Screens (Screen < 768px) */
 
-  @media (max-width: 767px) {
-    #receiptPrintM {
-        top: 0 !important;
-        bottom: 0 !important;
-        left: 50% !important;
-        right: auto !important;
-        width: 100% !important; /* Mobile par pura width cover karne ke liye */
-        max-width: 100% !important;
-        height: 100vh !important; /* Pura screen height touch karega */
-        transform: translateX(-50%) !important;
-        border-radius: 0 !important; /* Edge-to-edge look ke liye corners round hata sakte hain */
-        overflow-x: hidden !important;
-        overflow-y: auto !important;
-    }
+ 
+@media (min-width: 900px) {
+    .h { padding: 16px 32px; }
+    .mw { padding: 22px 32px; }
+    .pg { grid-template-columns: repeat(4, 1fr); gap: 16px; margin-right: 460px; }
+    .cart-bar { border-radius: 22px 22px 0 0; padding: 20px 40px; }
+    #cart-panel { width: 460px; right: 0; left: auto; border-radius: 28px 0 0 0; height: 100%; box-shadow: -20px 0 50px rgba(15,23,42,.18); }
+    .dash-container { padding: 32px; }
+    .ticket-grid { grid-template-columns: repeat(8, 1fr); }
 }
 
 /* Frame ka overflow handle karne ke liye */
@@ -4151,7 +4151,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     width: 133% !important; 
     height: 133% !important; 
     transform: scale(0.75) !important;
-    transform-origin: top left !important; /* Scale ka origin top left karne se horizontal overflow nahi hota */
+    transform-origin: top left !important;
     overflow-x: hidden !important;
     border: none !important;
     display: block !important;
