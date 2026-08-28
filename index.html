@@ -4094,14 +4094,17 @@ input[type="checkbox"] { accent-color: #0d9488; }
   
 
   /* PC / Desktop (Screen >= 768px): Top-Right me fixed rahega */
-#receiptPrintM {
+
+  #receiptPrintM {
     position: fixed !important;
     top: 4vh !important;
+    bottom: 4vh !important; /* Yeh add kar dein taaki bottom ko bhi 4vh ka gap milkar stretch ho jaye */
     left: auto !important;
     right: 28px !important;
     width: 360px !important;
     max-width: 360px !important;
-    height: 200% !important;
+    height: auto !important; /* height ko auto kar dein kyunki top aur bottom dono fix ho chuke hain */
+    max-height: none !important;
     transform: none !important;
 
     /* Horizontal scroll completely block karne ke liye */
@@ -4121,6 +4124,7 @@ input[type="checkbox"] { accent-color: #0d9488; }
     border: none !important;
     display: block !important;
 }
+
 
 /* Mobile Screens (Screen < 768px) */
 @media (max-width: 767px) {
