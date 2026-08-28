@@ -4129,21 +4129,21 @@ input[type="checkbox"] { accent-color: #0d9488; }
 
 
 /* Mobile Screens (Screen < 768px) */
-@media (max-width: 767px) {
+
+  @media (max-width: 767px) {
     #receiptPrintM {
-        top: 2vh !important;
+        top: 0 !important;
+        bottom: 0 !important;
         left: 50% !important;
         right: auto !important;
-        width: 92% !important;
-        max-width: 380px !important;
-        height: 94vh !important;
+        width: 100% !important; /* Mobile par pura width cover karne ke liye */
+        max-width: 100% !important;
+        height: 100vh !important; /* Pura screen height touch karega */
         transform: translateX(-50%) !important;
+        border-radius: 0 !important; /* Edge-to-edge look ke liye corners round hata sakte hain */
         overflow-x: hidden !important;
+        overflow-y: auto !important;
     }
-
-
-
-  
 }
 
 /* Frame ka overflow handle karne ke liye */
